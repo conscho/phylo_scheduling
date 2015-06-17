@@ -112,9 +112,9 @@ class NewickNode
     count_of_grandchildren = 0 # initializing variable. Not considering subtree repeats.
 
     @children.each do |child|
-      if child.leaf? then
+      if child.leaf?
         subtree_string += child.nucleotides[site_number]
-        if child.nucleotides[site_number] == '-' || child.nucleotides[site_number] == 'N' then
+        if child.nucleotides[site_number] == '-' || child.nucleotides[site_number] == 'N'
           count_of_children = count_of_children * 4 # 4 calculations if nucleobase is -
         end
       else
@@ -128,7 +128,7 @@ class NewickNode
 
     # Count if SR get skipped
     count_SR = 0 # initialize value
-    if !@calculated_subtrees.include?(subtree_string) then
+    if !@calculated_subtrees.include?(subtree_string)
       @calculated_subtrees.push(subtree_string)
       count_SR = count_of_children + count_of_grandchildren_SR
     end
@@ -485,11 +485,15 @@ class NewickTree
       if line_counter == 0 # information from first line of file
         @number_of_leaves = input[0].to_i
         @number_of_sites = partition[1] - partition[0] + 1
+      elsif line_counter > @number_of_leaves
+        if line.strip != ""
+          print("Warning: Non empty line with index > number_of_leaves found in phylip file! \n")
+        end
       else # actual saving of DNA string in tree
         target_node = self.findNode(input[0])
 
         # Simple error check
-        if target_node then
+        if target_node
           target_node.nucleotides = input[1][partition[0]-1..partition[1]-1]
         else
           raise NewickParseError, "The genes don't fit the tree"
@@ -517,7 +521,7 @@ class NewickTree
 
   # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file. Required for midpointRoot
   def set_edge_length
-    if @root.children[0].edgeLen == 0 then
+    if @root.children[0].edgeLen == 0
       @root.set_edge_length
     end
     return self
@@ -717,7 +721,7 @@ class NewickTree
 
   # root the tree on midpoint distance
   def midpointRoot
-    if @root.children[0].edgeLen == 0 then
+    if @root.children[0].edgeLen == 0
       raise NewickParseError, "No midpoint root on trees without edge length. Use set_edge_length for artifial length = 1"
     end
     unroot
