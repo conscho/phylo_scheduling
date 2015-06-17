@@ -105,7 +105,7 @@ class NewickNode
 
   # @return [Number of ML calculations that need to be done for current node and site with and without SR, full traversal child nodes string]
   # @param [The site that should be looked at] site_number
-  def tree_traversal_and_calculations_count(site_number)  # with and without SR (subtree repeats)
+  def tree_traversal_and_operations_count(site_number)  # with and without SR (subtree repeats)
     subtree_string = ''
     count_of_children = 1 # 1 calculcations if leaf_leaf
     count_of_grandchildren_SR = 0 # initializing variable. Considering subtree repeats.
@@ -114,9 +114,12 @@ class NewickNode
     @children.each do |child|
       if child.leaf? then
         subtree_string += child.nucleotides[site_number]
+        if child.nucleotides[site_number] == '-' || child.nucleotides[site_number] == 'N' then
+          count_of_children = count_of_children * 4 # 4 calculations if nucleobase is -
+        end
       else
         count_of_children = count_of_children * 4 # 4 calculations if inner_leaf and 16 if inner_inner
-        result = child.tree_traversal_and_calculations_count(site_number)
+        result = child.tree_traversal_and_operations_count(site_number)
         count_of_grandchildren += result[0]
         count_of_grandchildren_SR += result[1]
         subtree_string += result[2]
@@ -481,7 +484,7 @@ class NewickTree
       input = line.strip.split(" ")
       if line_counter == 0 # information from first line of file
         @number_of_leaves = input[0].to_i
-        @number_of_sites = partition[1] - partition[0]
+        @number_of_sites = partition[1] - partition[0] + 1
       else # actual saving of DNA string in tree
         target_node = self.findNode(input[0])
 
@@ -500,21 +503,23 @@ class NewickTree
   end
 
   # how many ML calculations for current tree
-  def ml_calculations
+  def ml_operations
     @root.clear_calculated_subtrees # clear previous values
     count = 0 # count of calculations for each site without skipping SR (= subtree repeats)
     count_SR = 0 # count of calculations for each site with skipping SR (= subtree repeats)
-    (0..@number_of_sites-1).each do |i|
-      result = @root.tree_traversal_and_calculations_count(i)
+    (0..@number_of_sites-1).each do |site|
+      result = @root.tree_traversal_and_operations_count(site)
       count += result[0]
       count_SR += result[1]
     end
     return [count, count_SR]
   end
 
-  # set edgeLen of all nodes of the tree to 1
+  # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file
   def set_edge_length
-    @root.set_edge_length
+    if @root.children[0].edgeLen == 0 then
+      @root.set_edge_length
+    end
     return self
   end
 

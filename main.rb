@@ -1,32 +1,34 @@
 require 'descriptive_statistics'
 require './lib/newick'
+require './lib/helper'
 
 
-# Test code
+# Get data
 tree = NewickTree.fromFile("./data/test/test.tree")
-partitions = [[1, 4]] # manual partitions
+partitions = read_partitions_from_file("./data/test/test.model")
 
-print("Unrooted - doesn't make sense...?\n")
-tree = tree.read_phylip("./data/test/test.phy", partitions[0])
-print(tree.to_s + "\n")
-
-calculations = tree.ml_calculations
-print((calculations).to_s + "\n")
-
+# Root tree
 root = "Seq5"
-print("Rooted at #{root}\n")
+print("Rooted at #{root}: ")
 tree = tree.reroot(tree.findNode(root))
 print(tree.to_s + "\n")
 
-calculations = tree.ml_calculations
-print("[Unique Operations, Operations]: " + (calculations).to_s + "\n")
+# Results for each partition
+partitions.each do |partition|
+  print("Results for partition #{partition}:\n")
+  tree_partition = tree.read_phylip("./data/test/test.phy", partition)
+  operations = tree_partition.ml_operations
+  print("  Maximum Operations: " + operations[0].to_s + "\n")
+  print("  Operations (without unique sites and repeats): " + operations[1].to_s + "\n")
+  print("  Ratio: " + ((operations[1].to_f / operations[0].to_f) * 100).round(2).to_s + "% \n")
+end
 
 
 
 =begin
 
-unroot_calc = [] # Unrooted calculations without subtree repeat optimization
-unroot_calc_optim = []  # Unrooted calculations with subtree repeat optimization
+unroot_calc = [] # Unrooted operations without subtree repeat optimization
+unroot_calc_optim = []  # Unrooted operations with subtree repeat optimization
 midpoint_calc = []
 midpoint_calc_optim = []
 
