@@ -515,7 +515,7 @@ class NewickTree
     return [count, count_SR]
   end
 
-  # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file
+  # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file. Required for midpointRoot
   def set_edge_length
     if @root.children[0].edgeLen == 0 then
       @root.set_edge_length
@@ -717,6 +717,9 @@ class NewickTree
 
   # root the tree on midpoint distance
   def midpointRoot
+    if @root.children[0].edgeLen == 0 then
+      raise NewickParseError, "No midpoint root on trees without edge length. Use set_edge_length for artifial length = 1"
+    end
     unroot
     org1, org2, dist = mostDistantLeaves
     midDist = dist / 2.0
