@@ -26,13 +26,13 @@ end
 =end
 
 
-
+root = "241"
 maximum_operations = []
 operations = []
 ratio = []
 partitions_length = 0
 
-Dir.glob('./data/medium/random_trees/*') do |file|
+Dir.glob('./data/medium/parsimony_trees/*') do |file|
 
   # Get data
   print("Processing file: #{file}\n")
@@ -41,7 +41,6 @@ Dir.glob('./data/medium/random_trees/*') do |file|
   partitions_length = partitions.count
 
   # Root tree
-  root = "241"
   print("Rooted at #{root}: ")
   tree = tree.reroot(tree.findNode(root))
   print(tree.to_s + "\n")
@@ -53,12 +52,12 @@ Dir.glob('./data/medium/random_trees/*') do |file|
     result = tree_partition.ml_operations
     maximum_operations.push(result[0])
     operations.push(result[1])
-    ratio.push(((result[1].to_f / result[0].to_f) * 100).round(2))
+    ratio.push(((result[1].to_f / result[0].to_f) * 100))
   end
 end
 
-print("#{maximum_operations.count / partitions_length} rooted trees with #{partitions_length} partitions:\n")
-print("  Maximum Operations: mean: #{maximum_operations.mean}, variance: #{maximum_operations.variance}, standard deviation: #{maximum_operations.standard_deviation.round(2)}\n")
-print("  Operations (without unique sites and repeats): mean: #{operations.mean}, variance: #{operations.variance}, standard deviation: #{operations.standard_deviation.round(2)}\n")
-print("  Ratio: mean: #{ratio.mean}, variance: #{ratio.variance}, standard deviation: #{ratio.standard_deviation.round(2)}\n")
+print("#{maximum_operations.count / partitions_length} trees with #{partitions_length} partitions, rooted at node #{root}:\n")
+print("  Maximum Operations: mean: #{maximum_operations.mean.round(2)}, variance: #{maximum_operations.variance.round(2)}, standard deviation: #{maximum_operations.standard_deviation.round(2)}\n")
+print("  Operations (without unique sites and repeats): mean: #{operations.mean.round(2)}, variance: #{operations.variance.round(2)}, standard deviation: #{operations.standard_deviation.round(2)}\n")
+print("  Ratio: mean: #{ratio.mean.round(2)}, variance: #{ratio.variance.round(2)}, standard deviation: #{ratio.standard_deviation.round(2)}\n")
 
