@@ -114,9 +114,6 @@ class NewickNode
     @children.each do |child|
       if child.leaf?
         subtree_string += child.nucleotides[site_number]
-        if child.nucleotides[site_number] == '-' || child.nucleotides[site_number] == 'N'
-          count_of_children = count_of_children * 4 # 4 calculations if nucleobase is -
-        end
       else
         count_of_children = count_of_children * 4 # 4 calculations if inner_leaf and 16 if inner_inner
         result = child.tree_traversal_and_operations_count(site_number)
