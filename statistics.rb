@@ -26,28 +26,29 @@ end
 =end
 
 
-root = "241"
+root = ""
 maximum_operations = []
 operations = []
 ratio = []
 partitions_length = 0
 
-Dir.glob('./data/medium/parsimony_trees/*') do |file|
+Dir.glob('./data/medium/random_trees/*randomTree*') do |file|
 
   # Get data
   print("Processing file: #{file}\n")
   tree = NewickTree.fromFile(file)
-  partitions = read_partitions_from_file("./data/medium/medium.model")
+  partitions = read_partitions_from_file("./data/medium/n6.model")
   partitions_length = partitions.count
 
-  # Root tree
+  # Root tree on first leaf alphabetically sorted
+  root = tree.taxa[113]
   print("Rooted at #{root}: ")
   tree = tree.reroot(tree.findNode(root))
   print(tree.to_s + "\n")
 
 
   partitions.each do |partition|
-    tree_partition = tree.read_phylip("./data/medium/medium.phy", partition)
+    tree_partition = tree.read_phylip("./data/medium/n6.phy", partition)
 
     result = tree_partition.ml_operations
     maximum_operations.push(result[0])
