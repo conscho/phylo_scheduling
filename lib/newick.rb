@@ -527,6 +527,9 @@ class NewickTree
     return self
   end
 
+  def nodes
+    return @root.descendants
+  end
 
 
   # return string representation of tree
