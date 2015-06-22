@@ -3,7 +3,7 @@ require './lib/newick'
 require './lib/helper'
 
 
-Dir.glob('./data/medium/parsimony_trees/*parsimonyTree*') do |file|
+Dir.glob('./data/small/parsimony_trees/*parsimony*') do |file|
   # Initialize variables
   maximum_operations = []
   operations = []
@@ -12,7 +12,7 @@ Dir.glob('./data/medium/parsimony_trees/*parsimonyTree*') do |file|
   # Get data
   print("Processing file: #{file}\n")
   tree = NewickTree.fromFile(file)
-  partitions = read_partitions_from_file("./data/medium/n6.model")
+  partitions = read_partitions_from_file("./data/small/n4.model")
   partitions_length = partitions.count
 
   # Root tree once on each node
@@ -26,13 +26,13 @@ Dir.glob('./data/medium/parsimony_trees/*parsimonyTree*') do |file|
 
     # Root tree
     root = node
-    print("Rooted at Node #{index}: #{root}\n")
+    #print("Rooted at Node #{index}: #{root}\n")
     tree = tree.reroot(node)
-    print(tree.to_s + "\n")
+    #print(tree.to_s + "\n")
 
     # Iterate over all partitions
     partitions.each do |partition|
-      tree_partition = tree.read_phylip("./data/medium/n6.phy", partition)
+      tree_partition = tree.read_phylip("./data/small/n4.phy", partition)
 
       result = tree_partition.ml_operations
       partition_maximum_operations.push(result[0])
