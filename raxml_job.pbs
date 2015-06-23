@@ -1,0 +1,9 @@
+#! /bin/bash
+#$ -pe mvapich12 12
+#$ -binding linear:12
+#$ -q sandy.q
+#$ -cwd
+#$ -j y 
+#$ -l h_rt=24:00:00
+source /etc/profile.d/modules.sh
+./repos/raxml_load_balancing/bins/linux/raxmlHPC-PTHREADS-AVX -m GTRCAT -p 871343 -s ./repos/raxml_load_balancing/data/n11/n11.phy -# 30 -q ./repos/raxml_load_balancing/data/n11/n11.model -d -T 12 -n T1
