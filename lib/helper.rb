@@ -1,4 +1,4 @@
-def read_partitions_from_file(file_name)
+def read_partitions(file_name)
   partitions = []
   model_file = File.new(file_name)
   model_file.each do |line|
