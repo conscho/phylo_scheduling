@@ -2,9 +2,16 @@ GEM
   remote: https://rubygems.org/
   specs:
     descriptive_statistics (2.5.1)
+    logger (1.2.8)
+    stackprof (0.2.7)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   descriptive_statistics
+  logger
+  stackprof
+
+BUNDLED WITH
+   1.10.5

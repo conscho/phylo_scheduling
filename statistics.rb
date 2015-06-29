@@ -1,17 +1,20 @@
-require 'descriptive_statistics'
 require './lib/helper'
 require './lib/newick'
 require './lib/multi_io'
 require './lib/numeric'
+require 'stackprof'
 require 'logger'
+require 'descriptive_statistics'
+
+# StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
 
 # Logger
-log_file = File.open("log/root_analysis_debug.log", "a")
+log_file = File.open("log/debug.log", "a")
 logger = Logger.new(MultiIO.new(STDOUT, log_file))
-logger.level = Logger::DEBUG
+logger.level = Logger::INFO
 
 # Program parameters
-tree_files =     './data/n6/random_trees/*random*'
+tree_files =     './data/n6/parsimony_trees/*parsimonyTree.T2.RUN.1*'
 partition_file = './data/n6/n6.model'
 phylip_file =    './data/n6/n6.phy'
 sample_root = true # true if you only want to use a sample root. false if you want root on all nodes of the tree.
@@ -47,7 +50,7 @@ Dir.glob(tree_files) do |file|
         tree.ml_operations_for_nodes(logger, root_nodes, partitions)
   end
 
-  logger.info("Tree: #{file} with #{partitions.size} partitions rooted at #{root_nodes.size} nodes:\n")
+  logger.info("Tree: #{file} with #{partitions.size} partitions rooted at #{root_nodes.size} nodes:")
   logger.info("  Maximum Operations: mean: #{tree_operations_maximum.round(2)}")
   logger.info("  Operations (without unique sites and repeats): mean: #{tree_operations_optimized.round(2)}")
   logger.info("  Ratio: mean: #{tree_operations_ratio.round(2)}")
@@ -64,3 +67,5 @@ logger.info("  Operations (without unique sites and repeats): min: #{all_trees_o
 logger.info("  Ratio: min: #{all_trees_operations_ratio.min.round(2)}, max: #{all_trees_operations_ratio.max.round(2)}, mean: #{all_trees_operations_ratio.mean.round(2)}, variance: #{all_trees_operations_ratio.variance.round(2)}, standard deviation: #{all_trees_operations_ratio.standard_deviation.round(2)}")
 
 logger.info("Programm finished at #{Time.now}. Runtime: #{(Time.now - start_time).duration}")
+
+# end

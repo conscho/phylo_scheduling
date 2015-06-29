@@ -259,7 +259,7 @@ class NewickNode
 
   # True if node has no children (and therefore is a leaf)
   def leaf?
-    if (@children.empty?)
+    if @children.empty?
       return true
     else
       return false
@@ -514,7 +514,7 @@ class NewickTree
     tree_operations_optimized = []
     tree_operations_ratio = []
 
-    logger.info("Iterating over #{root_nodes.size} nodes")
+    logger.debug("Iterating over #{root_nodes.size} nodes")
     root_nodes.each_with_index do |node, index|
 
       # Initialize variables
@@ -535,6 +535,7 @@ class NewickTree
         tree_part_operations_ratio.push(((result[1].to_f / result[0].to_f) * 100))
       end
 
+      # NOTE: Always takes the mean over all partitions of a tree. Partition edgecases possible.
       tree_operations_maximum.push(tree_part_operations_maximum.mean)
       tree_operations_optimized.push(tree_part_operations_optimized.mean)
       tree_operations_ratio.push(tree_part_operations_ratio.mean)
