@@ -506,7 +506,45 @@ class NewickTree
     return self
   end
 
-  # how many ML calculations for partition
+  # how many ML operations for partitioned tree and nodes to be rooted
+  def ml_operations_for_nodes(logger, root_nodes, partitions)
+
+    # Initialize variables
+    tree_operations_maximum = []
+    tree_operations_optimized = []
+    tree_operations_ratio = []
+
+    logger.info("Iterating over #{root_nodes.size} nodes")
+    root_nodes.each_with_index do |node, index|
+
+      # Initialize variables
+      tree_part_operations_maximum = []
+      tree_part_operations_optimized = []
+      tree_part_operations_ratio = []
+
+      # Root tree
+      self.reroot(node)
+      logger.debug("Rooted at Node #{index}: #{node}")
+      logger.debug(self.to_s)
+
+      # Iterate over all partitions
+      partitions.each do |partition|
+        result = ml_operations(partition)
+        tree_part_operations_maximum.push(result[0])
+        tree_part_operations_optimized.push(result[1])
+        tree_part_operations_ratio.push(((result[1].to_f / result[0].to_f) * 100))
+      end
+
+      tree_operations_maximum.push(tree_part_operations_maximum.mean)
+      tree_operations_optimized.push(tree_part_operations_optimized.mean)
+      tree_operations_ratio.push(tree_part_operations_ratio.mean)
+
+    end
+
+    [tree_operations_maximum.mean, tree_operations_optimized.mean, tree_operations_ratio.mean]
+  end
+
+  # how many ML operations for specific partition
   def ml_operations(partition)
     @root.clear_calculated_subtrees # clear previous values
 
