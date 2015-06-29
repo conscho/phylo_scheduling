@@ -484,7 +484,7 @@ class NewickTree
         @number_of_sites = partition[1] - partition[0] + 1
       elsif line_counter > @number_of_leaves
         if line.strip != ""
-          print("Warning: Non empty line with index > number_of_leaves found in phylip file! \n")
+          puts("Warning: Non empty line with index > number_of_leaves found in phylip file!")
         end
       else # actual saving of DNA string in tree
         target_node = self.findNode(input[0])

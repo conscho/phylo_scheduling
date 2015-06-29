@@ -12,7 +12,7 @@ Dir.glob('./data/small/parsimony_trees/*parsimony*') do |file|
   # Get data
   print("Processing file: #{file}\n")
   tree = NewickTree.fromFile(file)
-  partitions = read_partitions_from_file("./data/small/n4.model")
+  partitions = read_partitions("./data/small/n4.model")
   partitions_length = partitions.count
 
   # Root tree once on each node
