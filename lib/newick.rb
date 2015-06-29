@@ -407,8 +407,7 @@ end
 
 # noinspection ALL
 class NewickTree
-  attr_reader :root
-  attr_accessor :number_of_sites
+  attr_reader :roof
   attr_accessor :number_of_leaves
 
   def initialize(treeString)
@@ -474,41 +473,46 @@ class NewickTree
   end
 
   # save nucleotides from file at leaves of tree
-  def read_phylip(file_name, partition)
-    line_counter = 0
+  def read_phylip(file_name)
     in_file = File.new(file_name)
-    in_file.each do |line|
+    in_file.each_with_index do |line, index|
       input = line.strip.split(" ")
-      if line_counter == 0 # information from first line of file
+
+      if index == 0 # information from first line of file
         @number_of_leaves = input[0].to_i
-        @number_of_sites = partition[1] - partition[0] + 1
-      elsif line_counter > @number_of_leaves
-        if line.strip != ""
-          puts("Warning: Non empty line with index > number_of_leaves found in phylip file!")
-        end
-      else # actual saving of DNA string in tree
-        target_node = self.findNode(input[0])
-
-        # Simple error check
-        if target_node
-          target_node.nucleotides = input[1][partition[0]-1..partition[1]-1]
-        else
-          raise NewickParseError, "The genes don't fit the tree"
-        end
-
+        next
       end
-      line_counter += 1
+
+      if index > @number_of_leaves
+        if line.strip != ""
+          raise NewickParseError, "Warning: Non empty line with index > number_of_leaves found in phylip file!"
+        end
+        next
+      end
+
+      # actual saving of DNA string in tree
+      target_node = self.findNode(input[0])
+
+      # Error check
+      if target_node
+        target_node.nucleotides = input[1]
+      else
+        raise NewickParseError, "The genes don't fit the tree"
+      end
+
     end
+
     in_file.close
     return self
   end
 
-  # how many ML calculations for current tree
-  def ml_operations
+  # how many ML calculations for partition
+  def ml_operations(partition)
     @root.clear_calculated_subtrees # clear previous values
+
     count = 0 # count of calculations for each site without skipping SR (= subtree repeats)
     count_SR = 0 # count of calculations for each site with skipping SR (= subtree repeats)
-    (0..@number_of_sites-1).each do |site|
+    ((partition[0] - 1)..(partition[1] - 1)).each do |site|
       result = @root.tree_traversal_and_operations_count(site)
       count += result[0]
       count_SR += result[1]

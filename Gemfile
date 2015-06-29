@@ -6,4 +6,4 @@ gem "descriptive_statistics"
 
 
 
-ruby '2.2.0'
+ruby '2.2.1'

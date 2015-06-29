@@ -1,54 +1,69 @@
 require 'descriptive_statistics'
-require './lib/newick'
 require './lib/helper'
+require './lib/newick'
+require './lib/multi_io'
+require './lib/numeric'
+require 'logger'
 
+# Logger
+log_file = File.open("log/root_analysis_debug.log", "a")
+logger = Logger.new(MultiIO.new(STDOUT, log_file))
+logger.level = Logger::DEBUG
 
-Dir.glob('./data/small/parsimony_trees/*parsimony*') do |file|
+# Program parameters
+tree_files =     './data/n6/random_trees/*random*'
+partition_file = './data/n6/n6.model'
+phylip_file =    './data/n6/n6.phy'
+
+start_time = Time.now
+logger.info("Program started at #{start_time}")
+logger.info("Using parameters: Tree files: #{tree_files}; Partition file: #{partition_file}; Phylip File: #{phylip_file}")
+
+Dir.glob(tree_files) do |file|
+
   # Initialize variables
-  maximum_operations = []
-  operations = []
-  ratio = []
+  operations_maximum = []
+  operations_optimized = []
+  operations_ratio = []
 
   # Get data
-  print("Processing file: #{file}\n")
+  logger.debug("Processing file: #{file}")
   tree = NewickTree.fromFile(file)
-  partitions = read_partitions("./data/small/n4.model")
-  partitions_length = partitions.count
+  tree = tree.read_phylip(phylip_file)
+  partitions = read_partitions(partition_file)
 
   # Root tree once on each node
   tree_nodes = tree.nodes
-  print("Iterating over all #{tree_nodes.count} nodes\n")
+  logger.info("Iterating over all #{tree_nodes.count} nodes")
   tree.nodes.each_with_index do |node, index|
+
     # Initialize variables
     partition_maximum_operations = []
     partition_operations = []
     partition_ratio = []
 
     # Root tree
-    root = node
-    #print("Rooted at Node #{index}: #{root}\n")
     tree = tree.reroot(node)
-    #print(tree.to_s + "\n")
+    logger.debug("Rooted at Node #{index}: #{node}")
+    logger.debug(tree.to_s)
 
     # Iterate over all partitions
     partitions.each do |partition|
-      tree_partition = tree.read_phylip("./data/small/n4.phy", partition)
-
-      result = tree_partition.ml_operations
+      result = tree.ml_operations(partition)
       partition_maximum_operations.push(result[0])
       partition_operations.push(result[1])
       partition_ratio.push(((result[1].to_f / result[0].to_f) * 100))
     end
-    maximum_operations.push(partition_maximum_operations.mean)
-    operations.push(partition_operations.mean)
-    ratio.push(partition_ratio.mean)
+    operations_maximum.push(partition_maximum_operations.mean)
+    operations_optimized.push(partition_operations.mean)
+    operations_ratio.push(partition_ratio.mean)
   end
 
-  print("Tree: #{file} with #{partitions_length} partitions and #{tree_nodes.count} nodes. Rooting tree on each node:\n")
-  print("  Maximum Operations: min: #{maximum_operations.min.round(2)}, max: #{maximum_operations.max.round(2)}, mean: #{maximum_operations.mean.round(2)}, variance: #{maximum_operations.variance.round(2)}, standard deviation: #{maximum_operations.standard_deviation.round(2)}\n")
-  print("  Operations (without unique sites and repeats): min: #{operations.min.round(2)}, max: #{operations.max.round(2)}, mean: #{operations.mean.round(2)}, variance: #{operations.variance.round(2)}, standard deviation: #{operations.standard_deviation.round(2)}\n")
-  print("  Ratio: min: #{ratio.min.round(2)}, max: #{ratio.max.round(2)}, mean: #{ratio.mean.round(2)}, variance: #{ratio.variance.round(2)}, standard deviation: #{ratio.standard_deviation.round(2)}\n")
+  print("Tree: #{file} with #{partitions.size} partitions and #{tree_nodes.count} nodes. Rooting tree on each node:\n")
+  print("  Maximum Operations: min: #{operations_maximum.min.round(2)}, max: #{operations_maximum.max.round(2)}, mean: #{operations_maximum.mean.round(2)}, variance: #{operations_maximum.variance.round(2)}, standard deviation: #{operations_maximum.standard_deviation.round(2)}\n")
+  print("  Operations (without unique sites and repeats): min: #{operations_optimized.min.round(2)}, max: #{operations_optimized.max.round(2)}, mean: #{operations_optimized.mean.round(2)}, variance: #{operations_optimized.variance.round(2)}, standard deviation: #{operations_optimized.standard_deviation.round(2)}\n")
+  print("  Ratio: min: #{operations_ratio.min.round(2)}, max: #{operations_ratio.max.round(2)}, mean: #{operations_ratio.mean.round(2)}, variance: #{operations_ratio.variance.round(2)}, standard deviation: #{operations_ratio.standard_deviation.round(2)}\n")
 
 end
 
-
+logger.info("Programm finished at #{Time.now}. Runtime: #{(Time.now - start_time).duration}")
