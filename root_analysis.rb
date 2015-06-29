@@ -11,20 +11,28 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::DEBUG
 
 # Program parameters
-tree_files =     './data/n6/random_trees/*random*'
-partition_file = './data/n6/n6.model'
-phylip_file =    './data/n6/n6.phy'
+tree_files =     './data/n4/random_trees/*random*'
+partition_file = './data/n4/n4.model'
+phylip_file =    './data/n4/n4.phy'
+sample_root = true
 
+# Initialize
+root_node = ""
+all_trees_operations_maximum = []
+all_trees_operations_optimized = []
+all_trees_operations_ratio = []
+partitions = []
 start_time = Time.now
+
 logger.info("Program started at #{start_time}")
 logger.info("Using parameters: Tree files: #{tree_files}; Partition file: #{partition_file}; Phylip File: #{phylip_file}")
 
 Dir.glob(tree_files) do |file|
 
   # Initialize variables
-  operations_maximum = []
-  operations_optimized = []
-  operations_ratio = []
+  tree_operations_maximum = []
+  tree_operations_optimized = []
+  tree_operations_ratio = []
 
   # Get data
   logger.debug("Processing file: #{file}")
@@ -32,15 +40,15 @@ Dir.glob(tree_files) do |file|
   tree = tree.read_phylip(phylip_file)
   partitions = read_partitions(partition_file)
 
-  # Root tree once on each node
+  # Root tree
   tree_nodes = tree.nodes
-  logger.info("Iterating over all #{tree_nodes.count} nodes")
-  tree.nodes.each_with_index do |node, index|
+  logger.info("Iterating over all #{tree_nodes.size} nodes")
+  tree_nodes.each_with_index do |node, index|
 
     # Initialize variables
-    partition_maximum_operations = []
-    partition_operations = []
-    partition_ratio = []
+    tree_part_operations_maximum = []
+    tree_part_operations_optimized = []
+    tree_part_operations_ratio = []
 
     # Root tree
     tree = tree.reroot(node)
@@ -50,20 +58,30 @@ Dir.glob(tree_files) do |file|
     # Iterate over all partitions
     partitions.each do |partition|
       result = tree.ml_operations(partition)
-      partition_maximum_operations.push(result[0])
-      partition_operations.push(result[1])
-      partition_ratio.push(((result[1].to_f / result[0].to_f) * 100))
+      tree_part_operations_maximum.push(result[0])
+      tree_part_operations_optimized.push(result[1])
+      tree_part_operations_ratio.push(((result[1].to_f / result[0].to_f) * 100))
     end
-    operations_maximum.push(partition_maximum_operations.mean)
-    operations_optimized.push(partition_operations.mean)
-    operations_ratio.push(partition_ratio.mean)
+    tree_operations_maximum.push(tree_part_operations_maximum.mean)
+    tree_operations_optimized.push(tree_part_operations_optimized.mean)
+    tree_operations_ratio.push(tree_part_operations_ratio.mean)
+
   end
 
-  print("Tree: #{file} with #{partitions.size} partitions and #{tree_nodes.count} nodes. Rooting tree on each node:\n")
-  print("  Maximum Operations: min: #{operations_maximum.min.round(2)}, max: #{operations_maximum.max.round(2)}, mean: #{operations_maximum.mean.round(2)}, variance: #{operations_maximum.variance.round(2)}, standard deviation: #{operations_maximum.standard_deviation.round(2)}\n")
-  print("  Operations (without unique sites and repeats): min: #{operations_optimized.min.round(2)}, max: #{operations_optimized.max.round(2)}, mean: #{operations_optimized.mean.round(2)}, variance: #{operations_optimized.variance.round(2)}, standard deviation: #{operations_optimized.standard_deviation.round(2)}\n")
-  print("  Ratio: min: #{operations_ratio.min.round(2)}, max: #{operations_ratio.max.round(2)}, mean: #{operations_ratio.mean.round(2)}, variance: #{operations_ratio.variance.round(2)}, standard deviation: #{operations_ratio.standard_deviation.round(2)}\n")
+  print("Tree: #{file} with #{partitions.size} partitions and #{tree_nodes.size} nodes. Rooting tree on each node:\n")
+  print("  Maximum Operations: min: #{tree_operations_maximum.min.round(2)}, max: #{tree_operations_maximum.max.round(2)}, mean: #{tree_operations_maximum.mean.round(2)}, variance: #{tree_operations_maximum.variance.round(2)}, standard deviation: #{tree_operations_maximum.standard_deviation.round(2)}\n")
+  print("  Operations (without unique sites and repeats): min: #{tree_operations_optimized.min.round(2)}, max: #{tree_operations_optimized.max.round(2)}, mean: #{tree_operations_optimized.mean.round(2)}, variance: #{tree_operations_optimized.variance.round(2)}, standard deviation: #{tree_operations_optimized.standard_deviation.round(2)}\n")
+  print("  Ratio: min: #{tree_operations_ratio.min.round(2)}, max: #{tree_operations_ratio.max.round(2)}, mean: #{tree_operations_ratio.mean.round(2)}, variance: #{tree_operations_ratio.variance.round(2)}, standard deviation: #{tree_operations_ratio.standard_deviation.round(2)}\n")
+
+  all_trees_operations_maximum.push(tree_operations_maximum.mean)
+  all_trees_operations_optimized.push(tree_operations_optimized.mean)
+  all_trees_operations_ratio.push(tree_operations_ratio.mean)
 
 end
+
+logger.info("#{all_trees_operations_optimized.size} trees with #{partitions.size} partitions, rooted at node #{root_node}:")
+logger.info("  Maximum Operations: min: #{all_trees_operations_maximum.min.round(2)}, max: #{all_trees_operations_maximum.max.round(2)}, mean: #{all_trees_operations_maximum.mean.round(2)}, variance: #{all_trees_operations_maximum.variance.round(2)}, standard deviation: #{all_trees_operations_maximum.standard_deviation.round(2)}")
+logger.info("  Operations (without unique sites and repeats): min: #{all_trees_operations_optimized.min.round(2)}, max: #{all_trees_operations_optimized.max.round(2)}, mean: #{all_trees_operations_optimized.mean.round(2)}, variance: #{all_trees_operations_optimized.variance.round(2)}, standard deviation: #{all_trees_operations_optimized.standard_deviation.round(2)}")
+logger.info("  Ratio: min: #{all_trees_operations_ratio.min.round(2)}, max: #{all_trees_operations_ratio.max.round(2)}, mean: #{all_trees_operations_ratio.mean.round(2)}, variance: #{all_trees_operations_ratio.variance.round(2)}, standard deviation: #{all_trees_operations_ratio.standard_deviation.round(2)}")
 
 logger.info("Programm finished at #{Time.now}. Runtime: #{(Time.now - start_time).duration}")
