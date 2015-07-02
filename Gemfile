@@ -5,5 +5,6 @@ source "https://rubygems.org"
 gem 'descriptive_statistics'
 gem 'logger'
 gem 'stackprof'
+gem 'rinruby'
 
 ruby '2.2.1'

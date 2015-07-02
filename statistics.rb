@@ -5,6 +5,7 @@ require './lib/numeric'
 require 'stackprof'
 require 'logger'
 require 'descriptive_statistics'
+require 'rinruby'
 
 # StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
 
@@ -65,6 +66,24 @@ logger.info("#{all_trees_operations_optimized.size} trees with #{partitions.size
 logger.info("  Maximum Operations: min: #{all_trees_operations_maximum.min.round(2)}, max: #{all_trees_operations_maximum.max.round(2)}, mean: #{all_trees_operations_maximum.mean.round(2)}, variance: #{all_trees_operations_maximum.variance.round(2)}, standard deviation: #{all_trees_operations_maximum.standard_deviation.round(2)}")
 logger.info("  Operations (without unique sites and repeats): min: #{all_trees_operations_optimized.min.round(2)}, max: #{all_trees_operations_optimized.max.round(2)}, mean: #{all_trees_operations_optimized.mean.round(2)}, variance: #{all_trees_operations_optimized.variance.round(2)}, standard deviation: #{all_trees_operations_optimized.standard_deviation.round(2)}")
 logger.info("  Ratio: min: #{all_trees_operations_ratio.min.round(2)}, max: #{all_trees_operations_ratio.max.round(2)}, mean: #{all_trees_operations_ratio.mean.round(2)}, variance: #{all_trees_operations_ratio.variance.round(2)}, standard deviation: #{all_trees_operations_ratio.standard_deviation.round(2)}")
+
+R.all_trees_operations_maximum = all_trees_operations_maximum
+R.all_trees_operations_optimized = all_trees_operations_optimized
+R.all_trees_operations_ratio = all_trees_operations_ratio
+R.eval <<EOF
+     png(filename="operations.png")
+     data<-data.frame(
+       Maximum=all_trees_operations_maximum,
+       Operations=all_trees_operations_optimized
+       )
+     boxplot(data)
+     dev.off()
+
+     png(filename="ratio.png")
+     boxplot(all_trees_operations_ratio)
+     dev.off()
+EOF
+
 
 logger.info("Programm finished at #{Time.now}. Runtime: #{(Time.now - start_time).duration}")
 
