@@ -15,10 +15,15 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-tree_files =     './data/n6/parsimony_trees/*parsimonyTree.T2.RUN.1*'
-partition_file = './data/n6/n6.model'
-phylip_file =    './data/n6/n6.phy'
+data_folder =    './data/n6/'
+tree_files =     ['parsimony_trees/*parsimonyTree*',
+                  'parsimony_trees/*result*',
+                  'random_trees/*randomTree*',
+                  'random_trees/*result*']
+partition_file = 'n6.model'
+phylip_file =    'n6.phy'
 sample_root = true # true if you only want to use a sample root. false if you want root on all nodes of the tree.
+sample_trees = 10 # Enter the amount of trees that should be used for statistics.
 
 # Initialize
 all_trees_operations_maximum = []
@@ -27,61 +32,76 @@ all_trees_operations_ratio = []
 root_nodes = []
 partitions = []
 start_time = Time.now
+R.eval("dataList = list()")
 
 logger.info("Program started at #{start_time}")
-logger.info("Using parameters: Tree files: #{tree_files}; Partition file: #{partition_file}; Phylip File: #{phylip_file}")
+logger.info("Using parameters: Data folder: #{data_folder}; Tree files: #{tree_files}; " \
+            "Partition file: #{partition_file}; Phylip File: #{phylip_file}")
 
 
-Dir.glob(tree_files) do |file|
+tree_files.each do |batch|
 
-  # Get data
-  logger.debug("Processing file: #{file}")
-  tree = NewickTree.fromFile(file)
-  tree = tree.read_phylip(phylip_file)
-  partitions = read_partitions(partition_file)
+  Dir.glob(data_folder + batch).first(sample_trees).each do |file|
 
-  # Sample root or root once on all nodes?
-  if sample_root
-    root_nodes[0] = tree.findNode(tree.taxa[0])
-    tree_operations_maximum, tree_operations_optimized, tree_operations_ratio =
-        tree.ml_operations_for_nodes(logger, root_nodes, partitions)
-  else
-    root_nodes = tree.nodes
-    tree_operations_maximum, tree_operations_optimized, tree_operations_ratio =
-        tree.ml_operations_for_nodes(logger, root_nodes, partitions)
+    # Get data
+    logger.debug("Processing file: #{file}")
+    tree = NewickTree.fromFile(file)
+    tree = tree.read_phylip(data_folder + phylip_file)
+    partitions = read_partitions(data_folder + partition_file)
+
+    # Sample root or root once on all nodes?
+    if sample_root
+      root_nodes[0] = tree.findNode(tree.taxa[0])
+      tree_operations_maximum, tree_operations_optimized, tree_operations_ratio =
+          tree.ml_operations_for_nodes(logger, root_nodes, partitions)
+    else
+      root_nodes = tree.nodes
+      tree_operations_maximum, tree_operations_optimized, tree_operations_ratio =
+          tree.ml_operations_for_nodes(logger, root_nodes, partitions)
+    end
+
+    logger.info("Tree: #{file} with #{partitions.size} partitions rooted at #{root_nodes.size} node(s):")
+    logger.info("  Maximum Operations: mean: #{tree_operations_maximum.round(2)}")
+    logger.info("  Operations (without unique sites and repeats): mean: #{tree_operations_optimized.round(2)}")
+    logger.info("  Ratio: mean: #{tree_operations_ratio.round(2)}")
+
+    all_trees_operations_maximum.push(tree_operations_maximum)
+    all_trees_operations_optimized.push(tree_operations_optimized)
+    all_trees_operations_ratio.push(tree_operations_ratio)
+
   end
 
-  logger.info("Tree: #{file} with #{partitions.size} partitions rooted at #{root_nodes.size} nodes:")
-  logger.info("  Maximum Operations: mean: #{tree_operations_maximum.round(2)}")
-  logger.info("  Operations (without unique sites and repeats): mean: #{tree_operations_optimized.round(2)}")
-  logger.info("  Ratio: mean: #{tree_operations_ratio.round(2)}")
-
-  all_trees_operations_maximum.push(tree_operations_maximum)
-  all_trees_operations_optimized.push(tree_operations_optimized)
-  all_trees_operations_ratio.push(tree_operations_ratio)
+  logger.info(
+    "#{all_trees_operations_optimized.size} trees, taken from #{data_folder + batch} "\
+    "with #{partitions.size} partitions, rooted at #{root_nodes.size} nodes:"
+  )
+  logger.info(
+    "  Maximum Operations: min: #{all_trees_operations_maximum.min.round(2)}, "\
+    "max: #{all_trees_operations_maximum.max.round(2)}, mean: #{all_trees_operations_maximum.mean.round(2)}, "\
+    "variance: #{all_trees_operations_maximum.variance.round(2)}, "\
+    "standard deviation: #{all_trees_operations_maximum.standard_deviation.round(2)}"
+  )
+  logger.info(
+    "  Operations (without unique sites and repeats): min: #{all_trees_operations_optimized.min.round(2)}, "\
+    "max: #{all_trees_operations_optimized.max.round(2)}, mean: #{all_trees_operations_optimized.mean.round(2)}, "\
+    "variance: #{all_trees_operations_optimized.variance.round(2)}, "\
+    "standard deviation: #{all_trees_operations_optimized.standard_deviation.round(2)}"
+  )
+  logger.info(
+    "  Ratio: min: #{all_trees_operations_ratio.min.round(2)}, max: #{all_trees_operations_ratio.max.round(2)}, "\
+    "mean: #{all_trees_operations_ratio.mean.round(2)}, variance: #{all_trees_operations_ratio.variance.round(2)}, "\
+    "standard deviation: #{all_trees_operations_ratio.standard_deviation.round(2)}"
+  )
+  R.ratio = all_trees_operations_ratio
+  R.eval("dataList = c(dataList, list(ratio))")
 
 end
 
-logger.info("#{all_trees_operations_optimized.size} trees with #{partitions.size} partitions, rooted at #{root_nodes.size} nodes:")
-logger.info("  Maximum Operations: min: #{all_trees_operations_maximum.min.round(2)}, max: #{all_trees_operations_maximum.max.round(2)}, mean: #{all_trees_operations_maximum.mean.round(2)}, variance: #{all_trees_operations_maximum.variance.round(2)}, standard deviation: #{all_trees_operations_maximum.standard_deviation.round(2)}")
-logger.info("  Operations (without unique sites and repeats): min: #{all_trees_operations_optimized.min.round(2)}, max: #{all_trees_operations_optimized.max.round(2)}, mean: #{all_trees_operations_optimized.mean.round(2)}, variance: #{all_trees_operations_optimized.variance.round(2)}, standard deviation: #{all_trees_operations_optimized.standard_deviation.round(2)}")
-logger.info("  Ratio: min: #{all_trees_operations_ratio.min.round(2)}, max: #{all_trees_operations_ratio.max.round(2)}, mean: #{all_trees_operations_ratio.mean.round(2)}, variance: #{all_trees_operations_ratio.variance.round(2)}, standard deviation: #{all_trees_operations_ratio.standard_deviation.round(2)}")
-
-R.all_trees_operations_maximum = all_trees_operations_maximum
-R.all_trees_operations_optimized = all_trees_operations_optimized
-R.all_trees_operations_ratio = all_trees_operations_ratio
 R.eval <<EOF
-     png(filename="operations.png")
-     data<-data.frame(
-       Maximum=all_trees_operations_maximum,
-       Operations=all_trees_operations_optimized
-       )
-     boxplot(data)
-     dev.off()
-
-     png(filename="ratio.png")
-     boxplot(all_trees_operations_ratio)
-     dev.off()
+png(filename="ratio_comparison.png")
+boxplot(dataList, main=toupper("Comparison of trees from one dataset"),
+        xlab="Type of trees for the dataset", ylab="Ratio of computational savings")
+dev.off()
 EOF
 
 
