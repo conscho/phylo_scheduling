@@ -302,7 +302,6 @@ class NewickNode
   end
 
 
-
   # returns the last common ancestor node of self and given node
   def lca(node)
     if (self.include?(node))
@@ -407,7 +406,7 @@ end
 
 # noinspection ALL
 class NewickTree
-  attr_reader :roof
+  attr_reader :root
   attr_accessor :number_of_leaves
 
   def initialize(treeString)
@@ -507,12 +506,13 @@ class NewickTree
   end
 
   # how many ML operations for partitioned tree and nodes to be rooted
-  def ml_operations_for_nodes(logger, root_nodes, partitions)
+  def ml_operations_for_nodes(logger, root_nodes, partitions, height_analysis)
 
     # Initialize variables
     tree_operations_maximum = []
     tree_operations_optimized = []
     tree_operations_ratio = []
+    height = []
 
     logger.debug("Iterating over #{root_nodes.size} nodes")
     root_nodes.each_with_index do |node, index|
@@ -522,8 +522,8 @@ class NewickTree
       tree_part_operations_optimized = []
       tree_part_operations_ratio = []
 
-      # Root tree
-      self.reroot(node)
+      # Root tree unless the paramter midpoint root (root_nodes.size == 1) has been chosen
+      self.reroot(node) unless root_nodes.size == 1
       logger.debug("Rooted at Node #{index}: #{node}")
       logger.debug(self.to_s)
 
@@ -534,6 +534,9 @@ class NewickTree
         tree_part_operations_optimized.push(result[1])
         tree_part_operations_ratio.push(((result[1].to_f / result[0].to_f) * 100))
       end
+      if height_analysis
+        height.push(self.height)
+      end
 
       # NOTE: Always takes the mean over all partitions of a tree. Partition edgecases possible.
       tree_operations_maximum.push(tree_part_operations_maximum.mean)
@@ -542,7 +545,7 @@ class NewickTree
 
     end
 
-    [tree_operations_maximum.mean, tree_operations_optimized.mean, tree_operations_ratio.mean]
+    return [tree_operations_maximum, tree_operations_optimized, tree_operations_ratio, height]
   end
 
   # how many ML operations for specific partition
@@ -561,9 +564,7 @@ class NewickTree
 
   # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file. Required for midpointRoot
   def set_edge_length
-    if @root.children[0].edgeLen == 0
-      @root.set_edge_length
-    end
+    @root.set_edge_length
     return self
   end
 
@@ -632,6 +633,17 @@ class NewickTree
   # return array of all taxa in tree
   def taxa
     return @root.taxa
+  end
+
+  # return number of nodes to most distant leaf
+  def height
+    leaves = @root.leaves
+    height = 0
+    leaves.each do |leaf|
+      height_of_leaf = leaf.nodesToAncestor(@root)
+      height = height_of_leaf if height < height_of_leaf
+    end
+    height
   end
 
   # returns a 2D hash of pairwise distances on tree
@@ -763,7 +775,7 @@ class NewickTree
   end
 
   # root the tree on midpoint distance
-  def midpointRoot
+  def midpoint_root
     if @root.children[0].edgeLen == 0
       raise NewickParseError, "No midpoint root on trees without edge length. Use set_edge_length for artifial length = 1"
     end
