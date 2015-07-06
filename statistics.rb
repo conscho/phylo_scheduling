@@ -22,8 +22,9 @@ tree_files =     { pars: "parsimony_trees/*parsimonyTree*",
 partition_file = 'n6.model'
 phylip_file =    'n6.phy'
 sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-sample_trees = 1 # Enter the amount of trees that should be used for statistics.
+sample_trees = 50 # Enter the amount of trees that should be used for statistics.
 height_analysis = false # For each tree get a analysis of dependency vs ratio. Does not make sense for single root node parameter.
+compare_with_likelihood = true # Create plot with ratio to likelihood distribution
 
 # Initialize and handover to R
 start_time = Time.now
@@ -41,6 +42,9 @@ logger.info("Using parameters: Data folder: #{data_folder}; Tree files: #{tree_f
             "Sample root nodes: #{sample_root}; Sample trees: #{sample_trees}")
 
 
+# Get likelihood values also?
+likelihoods = read_likelihood(logger, tree_files, data_folder) if compare_with_likelihood
+
 tree_files.each do |key, batch|
 
   # Initialize
@@ -49,6 +53,7 @@ tree_files.each do |key, batch|
   all_trees_operations_ratio = []
   root_nodes = []
   partitions = []
+  all_trees_likelihoods = [] if compare_with_likelihood
 
   Dir.glob(data_folder + batch).first(sample_trees).each_with_index do |file, index|
 
@@ -78,6 +83,10 @@ tree_files.each do |key, batch|
     logger.info("  Maximum Operations: mean: #{all_trees_operations_maximum[index].round(2)}")
     logger.info("  Operations (without unique sites and repeats): mean: #{all_trees_operations_optimized[index].round(2)}")
     logger.info("  Ratio: mean: #{all_trees_operations_ratio[index].round(2)}")
+
+    if compare_with_likelihood
+      all_trees_likelihoods[index] = likelihoods[key.to_s + '-' + file]
+    end
 
     if height_analysis
       R.treeRatio = tree_operations_ratio
@@ -126,6 +135,7 @@ EOF
   R.eval("dataList = c(dataList, list(ratio))")
 
 end
+
 
 program_runtime = (Time.now - start_time).duration
 logger.info("Programm finished at #{Time.now}. Runtime: #{program_runtime}")
