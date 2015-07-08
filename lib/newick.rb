@@ -407,7 +407,8 @@ end
 # noinspection ALL
 class NewickTree
   attr_reader :root
-  attr_accessor :number_of_leaves
+  attr_accessor :number_of_taxa
+  attr_accessor :number_of_sites
 
   def initialize(treeString)
     tokenizer = NewickTokenizer.new(treeString)
@@ -478,11 +479,12 @@ class NewickTree
       input = line.strip.split(" ")
 
       if index == 0 # information from first line of file
-        @number_of_leaves = input[0].to_i
+        @number_of_taxa = input[0].to_i
+        @number_of_sites = input[1].to_i
         next
       end
 
-      if index > @number_of_leaves
+      if index > @number_of_taxa
         if line.strip != ""
           raise NewickParseError, "Warning: Non empty line with index > number_of_leaves found in phylip file!"
         end

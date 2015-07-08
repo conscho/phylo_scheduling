@@ -16,19 +16,20 @@ logger.level = Logger::INFO
 
 # Program parameters
 data_folder =    './data/n6/'
-tree_files =     { pars: "parsimony_trees/*parsimonyTree*",
+tree_files =     {
                    pars_ml: "parsimony_trees/*result*",
                    rand_ml: "random_trees/*result*"}
 partition_file = 'n6.model'
 phylip_file =    'n6.phy'
 sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-sample_trees = 50 # Enter the amount of trees that should be used for statistics.
+sample_trees = 3 # Enter the amount of trees that should be used for statistics.
 height_analysis = false # For each tree get a analysis of dependency vs ratio. Does not make sense for single root node parameter.
-compare_with_likelihood = true # Create plot with ratio to likelihood distribution
+compare_with_likelihood = false # Create plot with ratio to likelihood distribution
 
 # Initialize and handover to R
 start_time = Time.now
 graph_file_name = "graphs/#{start_time}"
+partitions = read_partitions(data_folder + partition_file)
 R.eval("dataList = list(); library(ggplot2); library(grid); fileCounter = 1")
 R.graphAxisNames = tree_files.keys.map &:to_s
 R.graphFileName = graph_file_name
@@ -45,23 +46,21 @@ logger.info("Using parameters: Data folder: #{data_folder}; Tree files: #{tree_f
 # Get likelihood values also?
 likelihoods = read_likelihood(logger, tree_files, data_folder) if compare_with_likelihood
 
-tree_files.each do |key, batch|
+tree_files.each do |batch_name, batch_path|
 
   # Initialize
   all_trees_operations_maximum = []
   all_trees_operations_optimized = []
   all_trees_operations_ratio = []
   root_nodes = []
-  partitions = []
   all_trees_likelihoods = [] if compare_with_likelihood
 
-  Dir.glob(data_folder + batch).first(sample_trees).each_with_index do |file, index|
+  Dir.glob(data_folder + batch_path).first(sample_trees).each_with_index do |file, index|
 
     # Get data
     logger.debug("Processing file: #{file}")
     tree = NewickTree.fromFile(file)
-    tree = tree.read_phylip(data_folder + phylip_file)
-    partitions = read_partitions(data_folder + partition_file)
+    tree = tree.read_phylip(data_folder + phylip_file) ## FIXME: Reading Phylip File for every tree
 
     # Sample root, midpoint root or root once on all nodes?
     if sample_root == "all"
@@ -79,13 +78,15 @@ tree_files.each do |key, batch|
     all_trees_operations_optimized[index] = tree_operations_optimized.mean
     all_trees_operations_ratio[index] = tree_operations_ratio.mean
 
-    logger.info("Tree: #{file} with #{partitions.size} partitions rooted at #{root_nodes.size} node(s):")
+    logger.info("Tree: #{file} rooted at #{root_nodes.size} node(s):")
     logger.info("  Maximum Operations: mean: #{all_trees_operations_maximum[index].round(2)}")
     logger.info("  Operations (without unique sites and repeats): mean: #{all_trees_operations_optimized[index].round(2)}")
     logger.info("  Ratio: mean: #{all_trees_operations_ratio[index].round(2)}")
 
     if compare_with_likelihood
-      all_trees_likelihoods[index] = likelihoods[key.to_s + '-' + file]
+      match_object = /.*\.(?<prefix>.*)\.RUN\.(?<tree_number>.*)/.match(file)
+      all_trees_likelihoods[index] = likelihoods[batch_name.to_s + '-' + match_object[:prefix] + '-' + match_object[:tree_number]]
+      logger.info("  Likelihood of tree: #{all_trees_likelihoods[index]}")
     end
 
     if height_analysis
@@ -93,11 +94,11 @@ tree_files.each do |key, batch|
       R.height = tree_height
       R.file = file
       R.fileIndex = index
-      R.key = key.to_s
+      R.key = batch_name.to_s
 
       R.eval <<EOF
-dataFrame <- data.frame(Ratio=treeRatio, Height=height)
-gp = ggplot(dataFrame, aes(x=Ratio, y=Height)) +
+dataFrame <- data.frame(Height=height, Ratio=treeRatio)
+gp = ggplot(dataFrame, aes(x=Height, y=Ratio)) +
   geom_point(shape=19, alpha=1/10) + geom_smooth(method=lm) +
   ggtitle(paste("Comparison of height to ratio for one tree rooting over all nodes\n",
     "Program parameters: Data folder ", dataFolder, "; Tree: " , file, "; Sample root: ", sampleRoot, sep = "")) +
@@ -109,7 +110,7 @@ EOF
   end
 
   logger.info(
-    "#{all_trees_operations_optimized.size} trees, taken from #{data_folder + batch} "\
+    "#{all_trees_operations_optimized.size} trees, taken from #{data_folder + batch_path} "\
     "with #{partitions.size} partitions, rooted at #{root_nodes.size} nodes:"
   )
   logger.info(
@@ -133,6 +134,19 @@ EOF
   # Handover to R
   R.ratio = all_trees_operations_ratio
   R.eval("dataList = c(dataList, list(ratio))")
+  if compare_with_likelihood
+    R.likelihoods = all_trees_likelihoods
+    R.key = batch_name.to_s
+    R.eval <<EOF
+dataFrame <- data.frame(Likelihood=likelihoods, Ratio=ratio)
+gp = ggplot(dataFrame, aes(x=Likelihood, y=Ratio)) +
+  geom_point(shape=19, alpha=1/10) + geom_smooth(method=lm) +
+  ggtitle(paste("Comparison of likelihood to ratio for one type of tree\n",
+    "Program parameters: Data folder ", dataFolder, "; Batch type: ", key, "; Sample root: ", sampleRoot, sep = "")) +
+  theme(plot.margin = unit(c(2,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
+ggsave(file=paste(graphFileName, " Likelihood analysis ", key, ".pdf" , sep = ""), plot = gp, w=10, h=7)
+EOF
+  end
 
 end
 
