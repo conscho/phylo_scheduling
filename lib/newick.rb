@@ -407,8 +407,6 @@ end
 # noinspection ALL
 class NewickTree
   attr_reader :root
-  attr_accessor :number_of_taxa
-  attr_accessor :number_of_sites
 
   def initialize(treeString)
     tokenizer = NewickTokenizer.new(treeString)
@@ -472,38 +470,20 @@ class NewickTree
     end
   end
 
-  # save nucleotides from file at leaves of tree
-  def read_phylip(file_name)
-    in_file = File.new(file_name)
-    in_file.each_with_index do |line, index|
-      input = line.strip.split(" ")
+  # save nucleotides at leaves of tree
+  def add_dna_sequences(phylip_data)
 
-      if index == 0 # information from first line of file
-        @number_of_taxa = input[0].to_i
-        @number_of_sites = input[1].to_i
-        next
-      end
-
-      if index > @number_of_taxa
-        if line.strip != ""
-          raise NewickParseError, "Warning: Non empty line with index > number_of_leaves found in phylip file!"
-        end
-        next
-      end
-
-      # actual saving of DNA string in tree
-      target_node = self.findNode(input[0])
+    phylip_data.each do |key, value|
+      target_node = self.findNode(key.to_s)
 
       # Error check
       if target_node
-        target_node.nucleotides = input[1]
+        target_node.nucleotides = value
       else
         raise NewickParseError, "The genes don't fit the tree"
       end
-
     end
 
-    in_file.close
     return self
   end
 
@@ -530,7 +510,7 @@ class NewickTree
       logger.debug(self.to_s)
 
       # Iterate over all partitions
-      partitions.each do |partition|
+      partitions.each_value do |partition|
         result = ml_operations(partition)
         tree_part_operations_maximum.push(result[0])
         tree_part_operations_optimized.push(result[1])
@@ -556,7 +536,7 @@ class NewickTree
 
     count = 0 # count of calculations for each site without skipping SR (= subtree repeats)
     count_SR = 0 # count of calculations for each site with skipping SR (= subtree repeats)
-    ((partition[0] - 1)..(partition[1] - 1)).each do |site|
+    ((partition[:start] - 1)..(partition[:end] - 1)).each do |site|
       result = @root.tree_traversal_and_operations_count(site)
       count += result[0]
       count_SR += result[1]

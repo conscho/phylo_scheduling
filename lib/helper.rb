@@ -1,12 +1,14 @@
 def read_partitions(file_name)
-  partitions = []
-  model_file = File.new(file_name)
-  model_file.each do |line|
-    partitions.push(line.match(/(\d+)-(\d+)/).captures.map(&:to_i))
+  partitions = {}
+  in_file = File.new(file_name)
+  in_file.each do |line|
+    match_object = /, ?(?<name>.*) = (?<start>\d+)-(?<end>\d+)/.match(line)
+    partitions[(match_object[:name].to_sym)] = { start: match_object[:start].to_i, end: match_object[:end].to_i }
   end
-  model_file.close
+  in_file.close
   return partitions
 end
+
 
 def read_likelihood(logger, tree_files, data_folder)
   # Initialize
@@ -39,4 +41,36 @@ def read_likelihood(logger, tree_files, data_folder)
   end
 
   likelihoods
+end
+
+
+def read_phylip(file_name)
+  number_of_taxa = 0
+  number_of_sites = 0
+  phylip_data = {}
+
+  in_file = File.new(file_name)
+  in_file.each_with_index do |line, index|
+    input = line.strip.split(" ")
+
+    if index == 0 # information from first line of file
+      number_of_taxa = input[0].to_i
+      number_of_sites = input[1].to_i
+      next
+    end
+
+    if index > number_of_taxa
+      if line.strip != ""
+        raise "Warning: Non empty line with index > number_of_leaves found in phylip file!"
+      end
+      next
+    end
+
+    phylip_data[(input[0].to_sym)] = input[1]
+
+  end
+
+  in_file.close
+
+  return number_of_taxa, number_of_sites, phylip_data
 end
