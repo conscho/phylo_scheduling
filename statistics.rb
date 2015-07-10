@@ -15,16 +15,16 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/n6/'
+data_folder =    './data/500/'
 tree_files =     { #pars: "parsimony_trees/*parsimonyTree*",
                    pars_ml: "parsimony_trees/*result*",
                    rand_ml: "random_trees/*result*"}
-partition_file = 'n6.model'
-phylip_file =    'n6.phy'
+partition_file = '500.partitions'
+phylip_file =    '500.phy'
 sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-sample_trees = 1 # Enter the amount of trees that should be used for statistics.
-height_analysis = false # For each tree get a analysis of dependency vs ratio. Does not make sense for single root node parameter.
-compare_with_likelihood = true # Create plot with ratio to likelihood distribution
+sample_trees = 100 # Enter the amount of trees that should be used for statistics.
+height_analysis = false # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
+compare_with_likelihood = false # Create plot with ratio to likelihood distribution
 
 # Initialize and handover to R
 start_time = Time.now
@@ -43,9 +43,9 @@ R.numberOfSites = number_of_sites
 
 logger.info("Program started at #{start_time}")
 logger.info("Using parameters: Data folder: #{data_folder}; Tree files: #{tree_files}; " \
-            "Partition file: #{partition_file}; Phylip File: #{phylip_file} " \
-            "Sample root nodes: #{sample_root}; Sample trees: #{sample_trees}" \
-            "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}" \
+            "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
+            "Sample root nodes: #{sample_root}; Sample trees: #{sample_trees}; " \
+            "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
             "Number of partitions: #{partitions.size}" )
 
 
@@ -106,9 +106,9 @@ tree_files.each do |batch_name, batch_path|
 dataFrame <- data.frame(Height=height, Ratio=treeRatio)
 gp = ggplot(dataFrame, aes(x=Height, y=Ratio)) +
   geom_point(shape=19, alpha=1/10) + geom_smooth(method=lm) +
-  ggtitle(paste("Comparison of height to ratio for one tree rooting over all nodes\n",
-    "Program parameters: Data folder ", dataFolder, "; Tree: " , file, "; Sample root: ", sampleRoot,
-    "\nPartitions: " , numberOfPartitions, " Taxa: " , numberOfTaxa, " Sites: " , numberOfSites, sep = "")) +
+  ggtitle(paste("Comparison of height to ratio for one tree rooting over specified nodes\n",
+    "Program parameters: Data folder ", dataFolder, "; Tree: " , file,
+    "\n Sample root: ", sampleRoot, "; Partitions: " , numberOfPartitions, " Taxa: " , numberOfTaxa, " Sites: " , numberOfSites, sep = "")) +
   theme(plot.margin = unit(c(1,2,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggsave(file=paste(graphFileName, " tree height analysis ", key, fileIndex, ".pdf" , sep = ""), plot = gp, w=10, h=7)
 EOF
