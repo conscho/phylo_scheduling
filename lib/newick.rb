@@ -487,48 +487,6 @@ class NewickTree
     return self
   end
 
-  # how many ML operations for partitioned tree and nodes to be rooted
-  def ml_operations_for_nodes(logger, root_nodes, partitions, height_analysis)
-
-    # Initialize variables
-    tree_operations_maximum = []
-    tree_operations_optimized = []
-    tree_operations_ratio = []
-    height = []
-
-    logger.debug("Iterating over #{root_nodes.size} nodes")
-    root_nodes.each_with_index do |node, index|
-
-      # Initialize variables
-      tree_part_operations_maximum = []
-      tree_part_operations_optimized = []
-      tree_part_operations_ratio = []
-
-      # Root tree unless the paramter midpoint root (root_nodes.size == 1) has been chosen
-      self.reroot(node) unless root_nodes.size == 1
-      logger.debug("Rooted at Node #{index}: #{node}")
-      logger.debug(self.to_s)
-
-      # Iterate over all partitions
-      partitions.each_value do |partition|
-        result = ml_operations(partition)
-        tree_part_operations_maximum.push(result[0])
-        tree_part_operations_optimized.push(result[1])
-        tree_part_operations_ratio.push(((result[1].to_f / result[0].to_f) * 100))
-      end
-      if height_analysis
-        height.push(self.height)
-      end
-
-      # NOTE: Always takes the mean over all partitions of a tree. Partition edgecases possible.
-      tree_operations_maximum.push(tree_part_operations_maximum.mean)
-      tree_operations_optimized.push(tree_part_operations_optimized.mean)
-      tree_operations_ratio.push(tree_part_operations_ratio.mean)
-
-    end
-
-    return [tree_operations_maximum, tree_operations_optimized, tree_operations_ratio, height]
-  end
 
   # how many ML operations for specific partition
   def ml_operations(partition)
