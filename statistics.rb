@@ -5,8 +5,7 @@ require './lib/numeric'
 require './lib/array'
 require 'stackprof'
 require 'logger'
-require 'descriptive_statistics'
-require 'rinruby'
+require 'csv'
 
 # StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
 
@@ -22,17 +21,17 @@ batches =     { #pars: "parsimony_trees/*parsimonyTree*",
                 rand_ml: "random_trees/*result*"}
 partition_file = '500.partitions'
 phylip_file =    '500.phy'
-sample_root = 20 # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-sample_trees = 5 # Enter the amount of trees that should be used for statistics.
+sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
+sample_trees = 100 # Enter the amount of trees that should be used for statistics.
 height_analysis = true # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
 compare_with_likelihood = true # Create plot with ratio to likelihood distribution.
-compare_partitions = true # Create plot with ratio to partition.
 
 # Initialize
 start_time = Time.now
 csv_output = []
 partitions = read_partitions(data_folder + partition_file)
 number_of_taxa, number_of_sites, phylip_data = read_phylip(data_folder + phylip_file)
+graph_file_name = "graphs/#{data_folder.scan(/\w+/).join(".")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
 logger.info("Program started at #{start_time}")
 logger.info("Using parameters: Data folder: #{data_folder}; Tree files: #{batches}; " \
@@ -103,39 +102,29 @@ batches.each do |batch_name, batch_path|
 
 end
 
-data_file = "data.csv"
+program_runtime = (Time.now - start_time).duration
+
+# Output results to CSV for R
+data_file = "#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
 csv_output.to_csv(data_file)
 logger.info("Data written to #{data_file}")
 
+# Output parameters to CSV for R
+program_parameters_output = { data_folder: data_folder, sample_root: sample_root, sample_trees: sample_trees,
+                               compare_with_likelihood: compare_with_likelihood,
+                               height_analysis: height_analysis, number_of_partitions: partitions.size,
+                               number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
+                               program_runtime: program_runtime, data_file: data_file,
+                               graph_file_name: graph_file_name }
 
-program_runtime = (Time.now - start_time).duration
-graph_file_name = "graphs/#{data_folder.scan(/\w+/).join(".")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
-
-R.dataFolder = data_folder
-R.sampleRoot = sample_root
-R.sampleTrees = sample_trees
-R.sampleTrees = sample_trees
-R.comparePartitions = compare_partitions.to_s
-R.compareWithLikelihood = compare_with_likelihood.to_s
-R.heightAnalysis = height_analysis.to_s
-R.numberOfPartitions = partitions.size
-R.numberOfTaxa = number_of_taxa
-R.numberOfSites = number_of_sites
-R.runtime = program_runtime
-R.dataFile = data_file
-R.graphAxisNames = batches.keys.map &:to_s
-R.graphFileName = graph_file_name
-
-R.eval <<EOF
-
-library(ggplot2)
-library(grid)
-rdata = read.csv(dataFile)
-
-EOF
+parameter_file = "#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
+CSV.open(parameter_file, "wb") do |csv|
+  csv << program_parameters_output.keys
+  csv << program_parameters_output.values
+end
+logger.info("Program parameters written to #{parameter_file}")
 
 
-logger.info("Graph written to #{graph_file_name}")
 logger.info("Programm finished at #{Time.now}. Runtime: #{program_runtime}")
 
 # end
