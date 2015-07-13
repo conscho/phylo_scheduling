@@ -3,9 +3,9 @@ require './lib/newick'
 require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
+require './lib/hash'
 require 'stackprof'
 require 'logger'
-require 'csv'
 
 # StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
 
@@ -15,16 +15,16 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/500/'
-batches =     { #pars: "parsimony_trees/*parsimonyTree*",
+data_folder =    './data/10a/'
+batches =     { pars: "parsimony_trees/*parsimonyTree*",
                 pars_ml: "parsimony_trees/*result*",
                 rand_ml: "random_trees/*result*"}
-partition_file = '500.partitions'
-phylip_file =    '500.phy'
+partition_file = '10.partitions'
+phylip_file =    '10.phy'
 sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
 sample_trees = 100 # Enter the amount of trees that should be used for statistics.
 height_analysis = true # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
-compare_with_likelihood = true # Create plot with ratio to likelihood distribution.
+compare_with_likelihood = false # Create plot with ratio to likelihood distribution.
 
 # Initialize
 start_time = Time.now
@@ -90,8 +90,8 @@ batches.each do |batch_name, batch_path|
         operations_optimized = result[1]
         operations_ratio = ((result[1].to_f / result[0].to_f) * 100)
 
-        csv_output << { batch: batch_name, tree: file, likelihood: likelihood,
-                        root_node: root_index, height: height, partition: partition_name,
+        csv_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
+                        root_node: root_index.to_s, height: height, partition: partition_name.to_s,
                         operations_maximum: operations_maximum, operations_optimized: operations_optimized,
                         operations_ratio: operations_ratio }
       end
@@ -105,8 +105,8 @@ end
 program_runtime = (Time.now - start_time).duration
 
 # Output results to CSV for R
-data_file = "#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
-csv_output.to_csv(data_file)
+data_file = "output/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
+csv_output.to_csv_file(data_file)
 logger.info("Data written to #{data_file}")
 
 # Output parameters to CSV for R
@@ -117,11 +117,8 @@ program_parameters_output = { data_folder: data_folder, sample_root: sample_root
                                program_runtime: program_runtime, data_file: data_file,
                                graph_file_name: graph_file_name }
 
-parameter_file = "#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
-CSV.open(parameter_file, "wb") do |csv|
-  csv << program_parameters_output.keys
-  csv << program_parameters_output.values
-end
+parameter_file = "output/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
+program_parameters_output.to_csv_file(parameter_file)
 logger.info("Program parameters written to #{parameter_file}")
 
 

@@ -1,19 +1,25 @@
 library(ggplot2)
 library(grid)
+
 programParameters = read.csv("parameters.csv")
-rubyData = read.csv(paste(programParameters[1, "data_file"])
+
+# Initialize
 graphFileName = programParameters[1, "graph_file_name"]
 parametersTitle = paste("Data folder:", programParameters[1, "data_folder"], "Number of partitions:", programParameters[1, "number_of_partitions"],
 						"Number of taxa:", programParameters[1, "number_of_taxa"], "Number of sites:", programParameters[1, "number_of_sites"],
 						"\nSample root:", programParameters[1, "sample_root"], "Sample trees:", programParameters[1, "sample_trees"],
 						"\nCompare with likelihood:", programParameters[1, "compare_with_likelihood"],
 						"Height analysis:", programParameters[1, "height_analysis"], "\nProgram runtime:", programParameters[1, "program_runtime"], sep = " ")
-
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 
-ggplotTitle = ggtitle(paste("Boxplot: Ratio per batch\n", parametersTitle))
+# Read Data and aggregate
+rubyData = read.csv(paste(programParameters[1, "data_file"])
 aggregatedData <- aggregate(rubyData[c("operations_maximum","operations_optimized")], by=rubyData[c("tree","batch","likelihood","root_node","height")], FUN=mean)
 aggregatedData$operations_ratio <- (aggregatedData$operations_optimized / aggregatedData$operations_maximum)
+
+
+# Generate graphs
+ggplotTitle = ggtitle(paste("Boxplot: Ratio per batch\n", parametersTitle))
 gp = ggplot(aggregatedData, aes(batch, operations_ratio)) + geom_boxplot() + ggplotTheme + ggplotTitle
 ggsave(file=paste(graphFileName, " ratio per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
 

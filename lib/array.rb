@@ -1,5 +1,5 @@
 class Array
-  def to_csv(csv_filename="hash.csv")
+  def to_csv_file(csv_filename="hash.csv")
     require 'csv'
     CSV.open(csv_filename, "wb") do |csv|
       csv << first.keys # adds the attributes name on the first line
