@@ -1,7 +1,7 @@
 library(ggplot2)
 library(grid)
 
-programParameters = read.csv("parameters.csv")
+programParameters = read.csv("output/2015-07-14 00-07-32 parameters.csv")
 
 # Initialize
 graphFileName = programParameters[1, "graph_file_name"]
@@ -13,7 +13,7 @@ parametersTitle = paste("Data folder:", programParameters[1, "data_folder"], "Nu
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 
 # Read Data and aggregate
-rubyData = read.csv(paste(programParameters[1, "data_file"])
+rubyData = read.csv(paste(programParameters[1, "data_file"]))
 aggregatedData <- aggregate(rubyData[c("operations_maximum","operations_optimized")], by=rubyData[c("tree","batch","likelihood","root_node","height")], FUN=mean)
 aggregatedData$operations_ratio <- (aggregatedData$operations_optimized / aggregatedData$operations_maximum)
 
