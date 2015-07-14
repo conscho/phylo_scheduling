@@ -4,27 +4,28 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
-require 'stackprof'
 require 'logger'
+require 'parallel'
 
-# StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
 
 # Logger
-log_file = File.open("log/debug.log", "a")
+log_file = File.open('log/debug.log', 'a')
 logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/10a/'
-batches =     { pars: "parsimony_trees/*parsimonyTree*",
-                pars_ml: "parsimony_trees/*result*",
-                rand_ml: "random_trees/*result*"}
-partition_file = '10.partitions'
-phylip_file =    '10.phy'
-sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
+data_folder =    './data/500/'
+batches =     { pars: 'parsimony_trees/*parsimonyTree*',
+                pars_ml: 'parsimony_trees/*result*',
+                rand_ml: 'random_trees/*result*'}
+partition_file = '500.partitions'
+phylip_file =    '500.phy'
+sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
 sample_trees = 100 # Enter the amount of trees that should be used for statistics.
 height_analysis = true # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
-compare_with_likelihood = false # Create plot with ratio to likelihood distribution.
+compare_with_likelihood = true # Create plot with ratio to likelihood distribution.
+number_of_processes = 3 # Parallel processing on X cores
+split_partitions = 10 # 0 if no split, otherwise 0 < x < number of sites in partition. If bigger it gets auto corrected.
 
 # Initialize
 start_time = Time.now
@@ -38,7 +39,7 @@ logger.info("Using parameters: Data folder: #{data_folder}; Tree files: #{batche
             "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
             "Sample root nodes: #{sample_root}; Sample trees: #{sample_trees}; " \
             "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
-            "Number of partitions: #{partitions.size}" )
+            "Number of partitions: #{partitions.size}; Number of processes: #{number_of_processes}" )
 
 
 # Get likelihood values also?
@@ -46,7 +47,12 @@ likelihoods = read_likelihood(logger, batches, data_folder) if compare_with_like
 
 batches.each do |batch_name, batch_path|
 
-  Dir.glob(data_folder + batch_path).first(sample_trees).each_with_index do |file, file_index|
+  list_of_trees = Dir.glob(data_folder + batch_path).first(sample_trees)
+
+  csv_output << Parallel.map(list_of_trees, :in_processes => number_of_processes) do |file|
+
+    # Initialize
+    tree_output = []
 
     # Get data
     logger.info("Processing file: #{file}")
@@ -85,37 +91,66 @@ batches.each do |batch_name, batch_path|
 
       # Iterate over all partitions
       partitions.each do |partition_name, partition|
+
+        # Split partitions for scheduling statistics
+        if split_partitions != 0
+
+          # Check for split_partitions > number of sites for partition
+          if split_partitions >= partition[:end] - partition[:start]
+            split_at = partition[:end] - partition[:start] - 1
+          else
+            split_at = split_partitions
+          end
+
+          result_until_split = tree.ml_operations({start: partition[:start], end: partition[:start] + split_at})
+          result_after_split = tree.ml_operations({start: partition[:start] + split_at + 1, end: partition[:end]})
+          operations_maximum = result_until_split[0] + result_after_split[0]
+          operations_optimized = result_until_split[1] + result_after_split[1]
+          operations_ratio = ((operations_optimized.to_f / operations_maximum.to_f) * 100)
+
+          tree_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
+                           root_node: root_index.to_s, height: height, partition: partition_name.to_s,
+                           operations_maximum: operations_maximum, operations_optimized: operations_optimized,
+                           operations_ratio: operations_ratio, split_partitions: split_at }
+
+        end
+
         result = tree.ml_operations(partition)
         operations_maximum = result[0]
         operations_optimized = result[1]
-        operations_ratio = ((result[1].to_f / result[0].to_f) * 100)
+        operations_ratio = ((operations_optimized.to_f / operations_maximum.to_f) * 100)
 
-        csv_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
+        tree_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
                         root_node: root_index.to_s, height: height, partition: partition_name.to_s,
                         operations_maximum: operations_maximum, operations_optimized: operations_optimized,
-                        operations_ratio: operations_ratio }
+                        operations_ratio: operations_ratio, split_partitions: 0 }
+
       end
 
     end
+
+    tree_output
 
   end
 
 end
 
+
 program_runtime = (Time.now - start_time).duration
 
 # Output results to CSV for R
 data_file = "output/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
-csv_output.to_csv_file(data_file)
+csv_output.flatten.to_csv_file(data_file)
 logger.info("Data written to #{data_file}")
 
 # Output parameters to CSV for R
 program_parameters_output = { data_folder: data_folder, sample_root: sample_root, sample_trees: sample_trees,
-                               compare_with_likelihood: compare_with_likelihood,
-                               height_analysis: height_analysis, number_of_partitions: partitions.size,
-                               number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
-                               program_runtime: program_runtime, data_file: data_file,
-                               graph_file_name: graph_file_name }
+                              compare_with_likelihood: compare_with_likelihood,
+                              height_analysis: height_analysis, number_of_partitions: partitions.size,
+                              number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
+                              program_runtime: program_runtime, data_file: data_file,
+                              graph_file_name: graph_file_name, number_of_processes: number_of_processes,
+                              split_partitions: split_partitions }
 
 parameter_file = "output/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
 program_parameters_output.to_csv_file(parameter_file)
@@ -123,5 +158,3 @@ logger.info("Program parameters written to #{parameter_file}")
 
 
 logger.info("Programm finished at #{Time.now}. Runtime: #{program_runtime}")
-
-# end
