@@ -1,5 +1,7 @@
 library(ggplot2)
 library(grid)
+library(dplyr)
+
 
 files <- list.files("output", pattern = "*parameters.csv", full.names = TRUE)
 
@@ -18,11 +20,17 @@ for (parameter.file in files) {
                           "Number of processes:", programParameters[1, "number_of_processes"], sep = " ")
   ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
   
-  # Read Data, aggregate and subet
+  # Read Data, aggregate and subset
   rawData = read.csv(paste(programParameters[1, "data_file"]))
-  subsetRawData <- droplevels(subset(rawData, split_partitions == 0)) # For values without splitted partitions
+  
+  subsetRawData <- filter(rawData, split_partitions == 0) # For values without splitted partitions
+  
   aggregatedData <- aggregate(subsetRawData[c("operations_maximum","operations_optimized")], by=subsetRawData[c("tree","batch","likelihood","root_node","height")], FUN=mean)
   aggregatedData$operations_ratio <- (aggregatedData$operations_optimized / aggregatedData$operations_maximum)
+  
+  splitData <- aggregate(rawData["operations_optimized"], by=rawData[c("operations_maximum", "tree", "batch", "root_node", "partition")], FUN=diff)
+  splitData$ratio_split_loss <- (abs(splitData$operations_optimized) / splitData$operations_maximum * 100)
+  
   
   # Generate graphs
   ggplotTitle = ggtitle(paste("Boxplot: Ratio per batch\n", parametersTitle))
@@ -41,8 +49,16 @@ for (parameter.file in files) {
   gp = ggplot(subsetRawData, aes(partition, operations_ratio, color=batch)) + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " ratio of partitions per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
-  ggplotTitle = ggtitle(paste("Line: Comparison splitted vs. unsplitted ratios per partition\n", parametersTitle))
-  gp = ggplot(rawData, aes(partition, operations_ratio, color=split_partitions)) + geom_point(shape=19, alpha=1/4) + facet_wrap(~split_partitions) + ggplotTheme + ggplotTitle
+  ggplotTitle = ggtitle(paste("Boxplot: Comparison splitted vs. unsplitted ratios per partition\n", parametersTitle))
+  gp = ggplot(rawData, aes(partition, operations_ratio, color=factor(split_partitions))) + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " ratio of un-splitted partitions", ".pdf" , sep = ""), plot = gp, w=10, h=7)
+  
+  ggplotTitle = ggtitle(paste("Boxplot: Ratio loss due to partition split per partition\n", parametersTitle))
+  gp = ggplot(splitData, aes(partition, ratio_split_loss)) + geom_boxplot(alpha=0.5, color="gray") + geom_jitter(alpha=0.1, aes(color=batch), position = position_jitter(width = 0.05)) + ggplotTheme + ggplotTitle
+  ggsave(file=paste(graphFileName, " ratio loss due to split per partition", ".pdf" , sep = ""), plot = gp, w=10, h=7)
+  
+  ggplotTitle = ggtitle(paste("Boxplot: Ratio loss due to partition split per batch including mean (red dot)\n", parametersTitle))
+  gp = ggplot(splitData, aes(batch, ratio_split_loss)) + stat_summary(fun.y=mean, colour="red", geom="point", size = 3) + geom_boxplot(alpha=0.5, color="gray") + geom_jitter(alpha=0.1, position = position_jitter(width = 0.05)) + ggplotTheme + ggplotTitle
+  ggsave(file=paste(graphFileName, " ratio loss due to split per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
 }
