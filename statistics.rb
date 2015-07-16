@@ -9,17 +9,17 @@ require 'parallel'
 
 
 # Logger
-log_file = File.open('log/debug.log', 'a')
+log_file = File.open("log/#{__FILE__}debug.log", 'a')
 logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/500/'
+data_folder =    './data/1000/'
 batches =     { pars: 'parsimony_trees/*parsimonyTree*',
                 pars_ml: 'parsimony_trees/*result*',
                 rand_ml: 'random_trees/*result*'}
-partition_file = '500.partitions'
-phylip_file =    '500.phy'
+partition_file = '1000.partitions'
+phylip_file =    '1000.phy'
 sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
 sample_trees = 100 # Enter the amount of trees that should be used for statistics.
 height_analysis = true # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
