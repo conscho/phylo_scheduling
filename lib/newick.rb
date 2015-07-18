@@ -98,16 +98,14 @@ class NewickNode
     @parent = nil
     @name = name
     @nucleotides = ""
-    @calculated_subtrees = []
+    @calculated_subtrees = Hash.new(0)
     @edgeLen = edgeLen
     @children = []
   end
 
-  # @return [Number of ML calculations that need to be done for current node and site with and without SR, full traversal child nodes string]
-  # @param [The site that should be looked at] site_number
   def tree_traversal_and_operations_count(site_number)  # with and without SR (subtree repeats)
     subtree_string = ''
-    count_of_children = 1 # 1 calculcations if leaf_leaf
+    count_of_children = 1 # 1 calculcation if leaf_leaf
     count_of_grandchildren_SR = 0 # initializing variable. Considering subtree repeats.
     count_of_grandchildren = 0 # initializing variable. Not considering subtree repeats.
 
@@ -123,14 +121,17 @@ class NewickNode
       end
     end
 
-    # Count if SR get skipped
-    count_SR = 0 # initialize value
-    if !@calculated_subtrees.include?(subtree_string)
-      @calculated_subtrees.push(subtree_string)
-      count_SR = count_of_children + count_of_grandchildren_SR
-    end
+    # Count of operations with SR optimization
+    count_SR = if @calculated_subtrees.has_key?(subtree_string)
+                 0
+               else
+                 count_of_children + count_of_grandchildren_SR
+               end
 
-    # Count if SR don't get skipped
+    # Collect site dependcies
+    @calculated_subtrees[subtree_string] += 1
+
+    # Count of operations without SR optimization
     count = count_of_children + count_of_grandchildren
 
     return [count, count_SR, subtree_string]
@@ -138,10 +139,20 @@ class NewickNode
 
   # Clear the value @calculated_subtrees from all child nodes
   def clear_calculated_subtrees
-    @calculated_subtrees = []
+    @calculated_subtrees.clear
     @children.each do |child|
       child.clear_calculated_subtrees
     end
+  end
+
+  def get_site_dependencies(length)
+    site_dependencies = []
+    descendants.each do |node|
+      next if node.calculated_subtrees.empty?
+      next if node.calculated_subtrees.keys[0].length != length
+      site_dependencies.push(node.calculated_subtrees.values)
+    end
+    site_dependencies
   end
 
   # Set the @edgeLen to 1 from self and all child nodes
@@ -472,7 +483,6 @@ class NewickTree
 
   # save nucleotides at leaves of tree
   def add_dna_sequences(phylip_data)
-
     phylip_data.each do |key, value|
       target_node = self.findNode(key.to_s)
 
@@ -500,6 +510,10 @@ class NewickTree
       count_SR += result[1]
     end
     return [count, count_SR]
+  end
+
+  def get_site_dependencies(length)
+    @root.get_site_dependencies(length)
   end
 
   # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file. Required for midpointRoot

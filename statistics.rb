@@ -9,23 +9,23 @@ require 'parallel'
 
 
 # Logger
-log_file = File.open("log/#{__FILE__}debug.log", 'a')
+log_file = File.open("log/#{File.basename(__FILE__, ".rb")}.debug.log", 'a+')
 logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/1000/'
+data_folder =    './data/128/'
 batches =     { pars: 'parsimony_trees/*parsimonyTree*',
                 pars_ml: 'parsimony_trees/*result*',
                 rand_ml: 'random_trees/*result*'}
-partition_file = '1000.partitions'
-phylip_file =    '1000.phy'
+partition_file = '128.partitions'
+phylip_file =    '128.phy'
 sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
 sample_trees = 100 # Enter the amount of trees that should be used for statistics.
 height_analysis = true # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
 compare_with_likelihood = true # Create plot with ratio to likelihood distribution.
 number_of_processes = 3 # Parallel processing on X cores
-split_partitions = 10 # 0 if no split, otherwise 0 < x < number of sites in partition. If bigger it gets auto corrected.
+split_partitions = 0 # 0 if no split, otherwise 0 < x < number of sites in partition. If bigger it gets auto corrected.
 
 # Initialize
 start_time = Time.now
@@ -60,10 +60,11 @@ batches.each do |batch_name, batch_path|
     tree = tree.add_dna_sequences(phylip_data)
 
     # Get likelihood for current tree
-    likelihood = 0
     if compare_with_likelihood
       match_object = /.*\.(?<prefix>.*)\.RUN\.(?<tree_number>.*)/.match(file)
       likelihood = likelihoods[batch_name.to_s + '-' + match_object[:prefix] + '-' + match_object[:tree_number]]
+    else
+      likelihood = 0
     end
 
     # Sample root, midpoint root or root once on all nodes?
@@ -84,10 +85,11 @@ batches.each do |batch_name, batch_path|
       tree.reroot(node) unless root_nodes.size == 1
       logger.debug("Rooted at Node #{root_index}: #{node}")
 
-      height = 0
-      if height_analysis
-        height = tree.height
-      end
+      height = if height_analysis
+                 tree.height
+               else
+                 0
+               end
 
       # Iterate over all partitions
       partitions.each do |partition_name, partition|
@@ -96,11 +98,11 @@ batches.each do |batch_name, batch_path|
         if split_partitions != 0
 
           # Check for split_partitions > number of sites for partition
-          if split_partitions >= partition[:end] - partition[:start]
-            split_at = partition[:end] - partition[:start] - 1
-          else
-            split_at = split_partitions
-          end
+          split_at = if split_partitions >= (partition[:end] - partition[:start])
+                       partition[:end] - partition[:start] - 1
+                     else
+                       split_partitions
+                     end
 
           result_until_split = tree.ml_operations({start: partition[:start], end: partition[:start] + split_at})
           result_after_split = tree.ml_operations({start: partition[:start] + split_at + 1, end: partition[:end]})
@@ -121,9 +123,9 @@ batches.each do |batch_name, batch_path|
         operations_ratio = ((operations_optimized.to_f / operations_maximum.to_f) * 100)
 
         tree_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
-                        root_node: root_index.to_s, height: height, partition: partition_name.to_s,
-                        operations_maximum: operations_maximum, operations_optimized: operations_optimized,
-                        operations_ratio: operations_ratio, split_partitions: 0 }
+                         root_node: root_index.to_s, height: height, partition: partition_name.to_s,
+                         operations_maximum: operations_maximum, operations_optimized: operations_optimized,
+                         operations_ratio: operations_ratio, split_partitions: 0 }
 
       end
 
@@ -140,7 +142,7 @@ program_runtime = (Time.now - start_time).duration
 
 # Output results to CSV for R
 data_file = "output/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
-csv_output.flatten.to_csv_file(data_file)
+csv_output.flatten.array_of_hashes_to_csv_file(data_file)
 logger.info("Data written to #{data_file}")
 
 # Output parameters to CSV for R
