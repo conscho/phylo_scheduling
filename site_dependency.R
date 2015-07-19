@@ -19,17 +19,17 @@ for (parameter.file in files) {
   
   # Read and aggregate data
   rawData = read.csv(paste(programParameters[1, "data_file"]))
-  aggregatedData <- summarise(group_by(rawData, batch, tree, partition, dependency), count = n())
-  cumData = mutate(group_by(aggregatedData, batch, tree, partition), cumsum=cumsum(count), proportion=cumsum/sum(count))
-  labelData = filter(cumData, dependency == 1)
+  aggregatedData <- summarise(group_by(rawData, batch, tree, partition, count), number_of_sites = n())
+  mutData = mutate(group_by(rawData, batch, tree, partition, count), name=as.character(site))
+#   labelData = filter(rawData, count == 1)
   
   # Generate graphs
-  ggplotTitle = ggtitle(paste("Barplot: Absolute count of site dependencies\n", parametersTitle))
-  gp = ggplot(cumData, aes(x=dependency, y=count, fill=partition)) + geom_bar(stat="identity") + geom_text(data = labelData, aes(label = count, color=partition), hjust=0, vjust=0) + xlab("dependencies") + facet_wrap(~tree, ncol = 3) +  ggplotTheme + ggplotTitle
-  ggsave(file=paste(graphFileName, " absolute site dependencies", ".pdf" , sep = ""), plot = gp, w=10, h=10)
+  ggplotTitle = ggtitle(paste("Line: How many dependencies per site?\n", parametersTitle))
+  gp = ggplot(rawData, aes(x=site, y=count, color=partition)) + geom_line() + facet_wrap(~tree, ncol = 3) + ggplotTheme + ggplotTitle
+  ggsave(file=paste(graphFileName, " site dependencies", ".pdf" , sep = ""), plot = gp, w=10, h=10)
 
-  ggplotTitle = ggtitle(paste("Step: Cumulated count of site dependencies\n", parametersTitle))
-  gp = ggplot(cumData, aes(x=dependency, y=proportion, color=partition)) + geom_step() + geom_text(data = labelData, aes(label = round(proportion, 2), color=partition), hjust=0, vjust=0) + xlab("dependencies") + facet_wrap(~tree, ncol = 3) + ylab("count") + ggplotTheme + ggplotTitle
-  ggsave(file=paste(graphFileName, " cumulated site dependencies", ".pdf" , sep = ""), plot = gp, w=10, h=10)
+  ggplotTitle = ggtitle(paste("Line: Distribution of site dependencies\n", parametersTitle))
+  gp = ggplot(rawData, aes(x=reorder(site,count), y=count, color=partition)) + geom_point(shape=19, alpha=1/4) + scale_x_discrete(breaks=NULL, name="sorted sites") +  facet_wrap(~tree, ncol = 3) + ggplotTheme + ggplotTitle
+  ggsave(file=paste(graphFileName, " site dependency distribution", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
 }

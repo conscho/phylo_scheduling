@@ -3,7 +3,7 @@ def read_partitions(file_name)
   in_file = File.new(file_name)
   in_file.each do |line|
     match_object = /, ?(?<name>.*) = (?<start>\d+)-(?<end>\d+)/.match(line)
-    partitions[(match_object[:name].to_sym)] = { start: match_object[:start].to_i, end: match_object[:end].to_i }
+    partitions[(match_object[:name].to_sym)] = ((match_object[:start].to_i - 1) .. (match_object[:end].to_i - 1))
   end
   in_file.close
   return partitions
@@ -74,3 +74,4 @@ def read_phylip(file_name)
 
   return number_of_taxa, number_of_sites, phylip_data
 end
+

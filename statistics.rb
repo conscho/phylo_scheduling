@@ -14,18 +14,18 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/128/'
+data_folder =    './data/59/'
 batches =     { pars: 'parsimony_trees/*parsimonyTree*',
                 pars_ml: 'parsimony_trees/*result*',
                 rand_ml: 'random_trees/*result*'}
-partition_file = '128.partitions'
-phylip_file =    '128.phy'
+partition_file = '59.partitions'
+phylip_file =    '59.phy'
 sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
 sample_trees = 100 # Enter the amount of trees that should be used for statistics.
 height_analysis = true # For each tree get a analysis of height to ratio. Does not make sense for single root node parameter.
 compare_with_likelihood = true # Create plot with ratio to likelihood distribution.
 number_of_processes = 3 # Parallel processing on X cores
-split_partitions = 0 # 0 if no split, otherwise 0 < x < number of sites in partition. If bigger it gets auto corrected.
+split_partitions = 10 # 0 if no split, otherwise 0 < x < number of sites in partition. If bigger it gets auto corrected.
 
 # Initialize
 start_time = Time.now
@@ -92,40 +92,36 @@ batches.each do |batch_name, batch_path|
                end
 
       # Iterate over all partitions
-      partitions.each do |partition_name, partition|
+      partitions.each do |partition_name, partition_range|
 
         # Split partitions for scheduling statistics
         if split_partitions != 0
 
           # Check for split_partitions > number of sites for partition
-          split_at = if split_partitions >= (partition[:end] - partition[:start])
-                       partition[:end] - partition[:start] - 1
+          split_at = if split_partitions >= (partition_range.end - partition_range.begin)
+                       partition_range.end - partition_range.begin - 1
                      else
                        split_partitions
                      end
 
-          result_until_split = tree.ml_operations({start: partition[:start], end: partition[:start] + split_at})
-          result_after_split = tree.ml_operations({start: partition[:start] + split_at + 1, end: partition[:end]})
-          operations_maximum = result_until_split[0] + result_after_split[0]
-          operations_optimized = result_until_split[1] + result_after_split[1]
-          operations_ratio = ((operations_optimized.to_f / operations_maximum.to_f) * 100)
+          result_until_split = tree.ml_operations(partition_range.begin .. (partition_range.begin + split_at))
+          result_after_split = tree.ml_operations((partition_range.begin + split_at + 1) .. partition_range.end)
 
           tree_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
                            root_node: root_index.to_s, height: height, partition: partition_name.to_s,
-                           operations_maximum: operations_maximum, operations_optimized: operations_optimized,
-                           operations_ratio: operations_ratio, split_partitions: split_at }
+                           operations_maximum: result_until_split[0] + result_after_split[0],
+                           operations_optimized: result_until_split[1] + result_after_split[1],
+                           operations_ratio: ((result_until_split[1] + result_after_split[1]).to_f/(result_until_split[0] + result_after_split[0]).to_f * 100),
+                           split_partitions: split_at }
 
         end
 
-        result = tree.ml_operations(partition)
-        operations_maximum = result[0]
-        operations_optimized = result[1]
-        operations_ratio = ((operations_optimized.to_f / operations_maximum.to_f) * 100)
+        result = tree.ml_operations(partition_range)
 
         tree_output << { batch: batch_name.to_s, tree: file.to_s, likelihood: likelihood,
                          root_node: root_index.to_s, height: height, partition: partition_name.to_s,
-                         operations_maximum: operations_maximum, operations_optimized: operations_optimized,
-                         operations_ratio: operations_ratio, split_partitions: 0 }
+                         operations_maximum: result[0], operations_optimized: result[1],
+                         operations_ratio: result[2], split_partitions: 0 }
 
       end
 

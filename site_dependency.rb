@@ -14,15 +14,15 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-data_folder =    './data/1000/'
+data_folder =    './data/500/'
 batches =     { pars: 'parsimony_trees/*parsimonyTree*',
                 pars_ml: 'parsimony_trees/*result*',
                 rand_ml: 'random_trees/*result*'}
-partition_file = '1000.partitions'
-phylip_file =    '1000.phy'
+partition_file = '500.partitions'
+phylip_file =    '500.phy'
 sample_root = "midpoint"
-sample_trees = 3 # Enter the amount of trees that should be used for statistics.
-number_of_processes = 3 # Parallel processing on X cores
+sample_trees = 1 # Enter the amount of trees that should be used for statistics.
+number_of_processes = 0 # Parallel processing on X cores
 
 # Initialize
 start_time = Time.now
@@ -58,12 +58,17 @@ batches.each do |batch_name, batch_path|
     tree = tree.set_edge_length.midpoint_root
 
     # Iterate over all partitions
-    partitions.each do |partition_name, partition|
+    partitions.each do |partition_name, partition_range|
 
-      tree.ml_operations(partition)
+      result = tree.ml_operations(partition_range)
 
-      tree.get_site_dependencies(2).flatten.each do |site_dependency|
-        tree_output << { batch: batch_name.to_s, tree: file.to_s, partition: partition_name.to_s, dependency: site_dependency }
+      site_dependencies = tree.get_site_dependencies
+
+      # Dirty Hack: If a site has zero dependencies it will not be present in the hash.
+      # That's why we iterate over all sites of the partition_range instead of all elements of site_dependencies
+      partition_range.each do |site_index|
+        tree_output << { batch: batch_name.to_s, tree: file.to_s, partition: partition_name.to_s,
+                         site: site_index, count: site_dependencies[site_index] }
       end
 
     end
