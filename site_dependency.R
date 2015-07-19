@@ -25,11 +25,11 @@ for (parameter.file in files) {
   
   # Generate graphs
   ggplotTitle = ggtitle(paste("Line: How many dependencies per site?\n", parametersTitle))
-  gp = ggplot(rawData, aes(x=site, y=count, color=partition)) + geom_line() + facet_wrap(~tree, ncol = 3) + ggplotTheme + ggplotTitle
+  gp = ggplot(rawData, aes(x=site, y=count, color=partition)) + geom_line() + facet_wrap(~tree, ncol = 1) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " site dependencies", ".pdf" , sep = ""), plot = gp, w=10, h=10)
 
   ggplotTitle = ggtitle(paste("Line: Distribution of site dependencies\n", parametersTitle))
-  gp = ggplot(rawData, aes(x=reorder(site,count), y=count, color=partition)) + geom_point(shape=19, alpha=1/4) + scale_x_discrete(breaks=NULL, name="sorted sites") +  facet_wrap(~tree, ncol = 3) + ggplotTheme + ggplotTitle
+  gp = ggplot(rawData, aes(x=reorder(site,count), y=count, color=partition)) + geom_point(shape=19, alpha=1/4) + scale_x_discrete(breaks=NULL, name="sorted sites") +  facet_wrap(~tree, ncol = 1) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " site dependency distribution", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
 }
