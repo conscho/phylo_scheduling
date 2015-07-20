@@ -2,9 +2,10 @@ library(ggplot2)
 library(grid)
 library(dplyr)
 
+ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
+ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 files <- list.files("output", pattern = "*parameters.csv", full.names = TRUE)
-
 for (parameter.file in files) {
   
   programParameters = read.csv(parameter.file)
@@ -18,7 +19,7 @@ for (parameter.file in files) {
                           "Height analysis:", programParameters[1, "height_analysis"], "Split partitions:", programParameters[1, "split_partitions"],
                           "\nProgram runtime:", programParameters[1, "program_runtime"],
                           "Number of processes:", programParameters[1, "number_of_processes"], sep = " ")
-  ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
+  
   
   # Read Data, aggregate and subset
   rawData = read.csv(paste(programParameters[1, "data_file"]))
@@ -46,15 +47,15 @@ for (parameter.file in files) {
   ggsave(file=paste(graphFileName, " height to ratio", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
   ggplotTitle = ggtitle(paste("Boxplot: Comparison of partitions for each tree\n", parametersTitle))
-  gp = ggplot(subsetRawData, aes(partition, operations_ratio, color=batch)) + geom_boxplot() + ggplotTheme + ggplotTitle
+  gp = ggplot(subsetRawData, aes(partition, operations_ratio, color=batch)) + ggplotRotateLabel + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " ratio of partitions per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
   ggplotTitle = ggtitle(paste("Boxplot: Comparison splitted vs. unsplitted ratios per partition\n", parametersTitle))
-  gp = ggplot(rawData, aes(partition, operations_ratio, color=factor(split_partitions))) + geom_boxplot() + ggplotTheme + ggplotTitle
+  gp = ggplot(rawData, aes(partition, operations_ratio, color=factor(split_partitions))) + ggplotRotateLabel + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " ratio of un-splitted partitions", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
   ggplotTitle = ggtitle(paste("Boxplot: Ratio loss due to partition split per partition\n", parametersTitle))
-  gp = ggplot(splitData, aes(partition, ratio_split_loss)) + geom_boxplot(alpha=0.5, color="gray") + geom_jitter(alpha=0.1, aes(color=batch), position = position_jitter(width = 0.05)) + ggplotTheme + ggplotTitle
+  gp = ggplot(splitData, aes(partition, ratio_split_loss)) + geom_boxplot(alpha=0.5, color="gray") + ggplotRotateLabel + geom_jitter(alpha=0.1, aes(color=batch), position = position_jitter(width = 0.05)) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " ratio loss due to split per partition", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
   ggplotTitle = ggtitle(paste("Boxplot: Ratio loss due to partition split per batch including mean (red dot)\n", parametersTitle))

@@ -94,7 +94,7 @@ batches.each do |batch_name, batch_path|
       # Iterate over all partitions
       partitions.each do |partition_name, partition_range|
 
-        # Split partitions for scheduling statistics
+        # Split partitions for statistics
         if split_partitions != 0
 
           # Check for split_partitions > number of sites for partition
