@@ -508,7 +508,7 @@ class NewickTree
       count += result[0]
       count_SR += result[1]
     end
-    return [count, count_SR, ((count_SR.to_f / count.to_f) * 100)]
+    return [count, count_SR, ((count.to_f - count_SR.to_f) / count.to_f * 100)]
   end
 
   def get_site_dependencies
