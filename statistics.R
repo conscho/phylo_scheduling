@@ -5,20 +5,17 @@ library(dplyr)
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-files <- list.files("output", pattern = "*parameters.csv", full.names = TRUE)
+files <- list.files("output_statistics", pattern = "*parameters.csv", full.names = TRUE)
 for (parameter.file in files) {
   
   programParameters = read.csv(parameter.file)
   
   # Initialize
   graphFileName = programParameters[1, "graph_file_name"]
-  parametersTitle = paste("Phylip file:", programParameters[1, "phylip_file"], "Number of partitions:", programParameters[1, "number_of_partitions"],
-                          "Number of taxa:", programParameters[1, "number_of_taxa"], "Number of sites:", programParameters[1, "number_of_sites"],
-                          "\nSample root:", programParameters[1, "sample_root"], "Sample trees:", programParameters[1, "sample_trees"],
-                          "\nCompare with likelihood:", programParameters[1, "compare_with_likelihood"],
-                          "Height analysis:", programParameters[1, "height_analysis"], "Split partitions:", programParameters[1, "split_partitions"],
-                          "\nProgram runtime:", programParameters[1, "program_runtime"],
-                          "Number of processes:", programParameters[1, "number_of_processes"], sep = " ")
+  parametersTitle = ""
+  for (parameterName in names(programParameters)) {
+    parametersTitle <- paste(parametersTitle,(paste(parameterName, programParameters[1, parameterName], sep=": ")), sep = "\n")
+  }
   
   
   # Read Data, aggregate and subset

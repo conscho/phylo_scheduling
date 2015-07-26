@@ -19,14 +19,15 @@ tree_file = "./data/7/parsimony_trees/RAxML_parsimonyTree.T2.RUN.0"
 partition_file = './data/7/7.partitions.uniq'
 phylip_file =    './data/7/7.phy.uniq'
 sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-number_of_bins = 4
-crop_partitions = 2
-crop_sites_per_partition = 6 # Recommended maximum total sites to bins: 20/2 | 14/3 | 12/4
+number_of_bins = 2
+crop_partitions = 3
+crop_sites_per_partition = 7 # Recommended maximum total sites to bins: 20/2 | 14/3 | 12/4
 
 # Initialize
 start_time = Time.now
 partitions = read_partitions(partition_file)
 number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
+graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
 # Drop identical sites
 if !partition_file.include?("uniq")
@@ -64,9 +65,11 @@ tree = tree.set_edge_length.midpoint_root
 
 # Test each distribution and save best distribution
 best_distribution = []
-best_distribution_operations = Float::INFINITY
+best_dist_operations_optimized = Float::INFINITY
+best_dist_operations_maximum = 0
 distributions.each do |distribution|
-  distribution_operations = 0
+  dist_operations_maximum = 0
+  dist_operations_optimized = 0
   distribution.each do |bin|
     # Generate partition distribution
     partitions = Hash.new([])
@@ -75,21 +78,50 @@ distributions.each do |distribution|
     # Iterate over all partitions
     partitions.each do |partition_name, partition_range|
       result = tree.ml_operations(partition_range)
-      distribution_operations += result[1]
+      dist_operations_maximum += result[0]
+      dist_operations_optimized += result[1]
     end
   end
 
   # Check if it the current distribution is a new minimum
-  if distribution_operations < best_distribution_operations
+  if dist_operations_optimized < best_dist_operations_optimized
     best_distribution = distribution
-    best_distribution_operations = distribution_operations
-    logger.info("Found new minimum: #{best_distribution_operations} operations")
+    best_dist_operations_optimized = dist_operations_optimized
+    best_dist_operations_maximum = dist_operations_maximum
+    logger.info("Found new minimum: #{best_dist_operations_optimized} operations")
   end
 end
 
 
-logger.info("Absolute minimum: #{best_distribution_operations}")
+best_dist_savings = ((best_dist_operations_maximum-best_dist_operations_optimized).to_f/best_dist_operations_maximum.to_f*100).round(2)
+logger.info("Absolute minimum #{best_dist_operations_optimized} with savings of #{best_dist_savings}")
 logger.info("Distribution: #{best_distribution}")
 
+csv_output = []
+best_distribution.each_with_index do |bin, bin_index|
+  bin.each_with_index do |element|
+    csv_output << {element: element.keys[0], bin: bin_index, partition: element.values[0]}
+  end
+end
+
 program_runtime = (Time.now - start_time).duration
+
+# Output results to CSV for R
+data_file = "output_#{File.basename(__FILE__, ".rb")}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
+logger.info("Writing data to #{data_file}")
+csv_output.flatten.array_of_hashes_to_csv_file(data_file)
+
+
+# Output parameters to CSV for R
+program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root,
+                              number_of_bins: number_of_bins, crop_partitions: crop_partitions,
+                              crop_sites_per_partition: crop_sites_per_partition, best_dist_savings: best_dist_savings,
+                              program_runtime: program_runtime, data_file: data_file,
+                              graph_file_name: graph_file_name}
+
+parameter_file = "output_#{File.basename(__FILE__, ".rb")}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
+program_parameters_output.to_csv_file(parameter_file)
+logger.info("Program parameters written to #{parameter_file}")
+
+
 logger.info("Programm finished at #{Time.now}. Runtime: #{program_runtime}")

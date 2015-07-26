@@ -13,11 +13,10 @@ for (parameter.file in files) {
   
   # Initialize
   graphFileName = programParameters[1, "graph_file_name"]
-  parametersTitle = paste("Phylip file:", programParameters[1, "phylip_file"], "Number of partitions:", programParameters[1, "number_of_partitions"],
-                          "Number of taxa:", programParameters[1, "number_of_taxa"], "Number of sites:", programParameters[1, "number_of_sites"],
-                          "\nSample root:", programParameters[1, "sample_root"], "Sample trees:", programParameters[1, "sample_trees"],
-                          "\nProgram runtime:", programParameters[1, "program_runtime"],
-                          "Number of processes:", programParameters[1, "number_of_processes"], sep = " ")
+  parametersTitle = ""
+  for (parameterName in names(programParameters)) {
+    parametersTitle <- paste(parametersTitle,(paste(parameterName, programParameters[1, parameterName], sep=": ")), sep = "\n")
+  }
   
   
   # Read and aggregate data

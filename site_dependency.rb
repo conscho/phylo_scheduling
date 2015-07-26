@@ -88,7 +88,7 @@ end
 program_runtime = (Time.now - start_time).duration
 
 # Output results to CSV for R
-data_file = "output_site_dependency/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
+data_file = "output_#{File.basename(__FILE__, ".rb")}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
 logger.info("Writing data to #{data_file}")
 csv_output.flatten.array_of_hashes_to_csv_file(data_file)
 
@@ -100,7 +100,7 @@ program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root
                               program_runtime: program_runtime, data_file: data_file,
                               graph_file_name: graph_file_name, number_of_processes: number_of_processes }
 
-parameter_file = "output_site_dependency/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
+parameter_file = "output_#{File.basename(__FILE__, ".rb")}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
 program_parameters_output.to_csv_file(parameter_file)
 logger.info("Program parameters written to #{parameter_file}")
 
