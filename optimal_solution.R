@@ -23,14 +23,8 @@ for (parameter.file in files) {
   
   
   # Generate graphs
-  graphFileName = paste(programParameters[1, "graph_file_name"], " groundtruth", sep = "")
-  counter = 1
-  while (file.exists(paste(graphFileName, counter, ".pdf" , sep = ""))) {
-    counter = counter + 1
-  }
-  
-  ggplotTitle = ggtitle(paste("Barchart: Site distribution\n", parametersTitle))
+    ggplotTitle = ggtitle(paste("Barchart: Site distribution\n", parametersTitle))
   gp = ggplot(rawData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar() + ggplotTheme + ggplotTitle
-  ggsave(file=paste(graphFileName, counter, ".pdf" , sep = ""), plot = gp, w=10, h=10)
+  ggsave(file=paste(graphFileName, " groundtruth", ".pdf" , sep = ""), plot = gp, w=10, h=10)
 
 }

@@ -19,9 +19,9 @@ tree_file = "./data/7/parsimony_trees/RAxML_parsimonyTree.T2.RUN.0"
 partition_file = './data/7/7.partitions.uniq'
 phylip_file =    './data/7/7.phy.uniq'
 sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-number_of_bins = 2
-crop_partitions = 3
-crop_sites_per_partition = 7 # Recommended maximum total sites to bins: 20/2 | 14/3 | 12/4
+number_of_bins = 4
+crop_partitions = 2
+crop_sites_per_partition = 6 # Recommended maximum total sites to bins: 20/2 | 14/3 | 12/4
 
 # Initialize
 start_time = Time.now
@@ -65,12 +65,16 @@ tree = tree.set_edge_length.midpoint_root
 
 # Test each distribution and save best distribution
 best_distribution = []
-best_dist_operations_optimized = Float::INFINITY
 best_dist_operations_maximum = 0
+best_dist_operations_optimized = Float::INFINITY
 distributions.each do |distribution|
   dist_operations_maximum = 0
   dist_operations_optimized = 0
+
   distribution.each do |bin|
+    bin_operations_maximum = 0
+    bin_operations_optimized = 0
+
     # Generate partition distribution
     partitions = Hash.new([])
     bin.each { |site| partitions[site.values[0]] = partitions[site.values[0]] + [site.keys[0]]}
@@ -78,23 +82,30 @@ distributions.each do |distribution|
     # Iterate over all partitions
     partitions.each do |partition_name, partition_range|
       result = tree.ml_operations(partition_range)
-      dist_operations_maximum += result[0]
-      dist_operations_optimized += result[1]
+      bin_operations_maximum += result[0]
+      bin_operations_optimized += result[1]
     end
+
+    # Get the operations count for the largest bin -> bottleneck
+    if bin_operations_optimized > dist_operations_optimized
+      dist_operations_optimized = bin_operations_maximum
+      dist_operations_maximum = bin_operations_maximum
+    end
+
   end
 
-  # Check if it the current distribution is a new minimum
+  # Check if it the current distribution has a minimal largest bin
   if dist_operations_optimized < best_dist_operations_optimized
     best_distribution = distribution
     best_dist_operations_optimized = dist_operations_optimized
     best_dist_operations_maximum = dist_operations_maximum
-    logger.info("Found new minimum: #{best_dist_operations_optimized} operations")
+    logger.info("Found new minimum: #{best_dist_operations_optimized} operations in largest bin")
   end
 end
 
 
 best_dist_savings = ((best_dist_operations_maximum-best_dist_operations_optimized).to_f/best_dist_operations_maximum.to_f*100).round(2)
-logger.info("Absolute minimum #{best_dist_operations_optimized} with savings of #{best_dist_savings}")
+logger.info("Absolute minimum #{best_dist_operations_optimized} with savings of #{best_dist_savings} in largest bin")
 logger.info("Distribution: #{best_distribution}")
 
 csv_output = []
@@ -115,7 +126,8 @@ csv_output.flatten.array_of_hashes_to_csv_file(data_file)
 # Output parameters to CSV for R
 program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root,
                               number_of_bins: number_of_bins, crop_partitions: crop_partitions,
-                              crop_sites_per_partition: crop_sites_per_partition, best_dist_savings: best_dist_savings,
+                              crop_sites_per_partition: crop_sites_per_partition,
+                              best_dist_savings_in_largest_bin: best_dist_savings,
                               program_runtime: program_runtime, data_file: data_file,
                               graph_file_name: graph_file_name}
 
