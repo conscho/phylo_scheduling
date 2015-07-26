@@ -14,11 +14,11 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-batches =     { pars: './data/500/parsimony_trees/*parsimonyTree*',
-                pars_ml: './data/500/parsimony_trees/*result*',
-                rand_ml: './data/500/random_trees/*result*'}
-partition_file = './data/500/500.partitions'
-phylip_file =    './data/500/500.phy'
+batches =     { pars: './data/7/parsimony_trees/*parsimonyTree*',
+                pars_ml: './data/7/parsimony_trees/*result*',
+                rand_ml: './data/7/random_trees/*result*'}
+partition_file = './data/7/7.partitions'
+phylip_file =    './data/7/7.phy'
 sample_root = "midpoint" # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
 sample_trees = 9 # Enter the amount of trees that should be used for statistics.
 compare_with_likelihood = true # Create plot with ratio to likelihood distribution. Only works with RAxML naming of files.
@@ -32,7 +32,7 @@ partitions = read_partitions(partition_file)
 number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
-# Drop identical sites from phylip file
+# Drop identical sites
 if !partition_file.include?("uniq")
   number_of_sites, partitions, phylip_data, partition_file, phylip_file =
       drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)

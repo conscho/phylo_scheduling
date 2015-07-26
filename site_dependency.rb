@@ -30,7 +30,7 @@ partitions = read_partitions(partition_file)
 number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
-# Drop identical sites from phylip file
+# Drop identical sites
 if !partition_file.include?("uniq")
   number_of_sites, partitions, phylip_data, partition_file, phylip_file =
       drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
