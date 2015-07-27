@@ -10,7 +10,7 @@ def read_partitions(file_name)
 end
 
 
-def read_likelihood(logger, batches)
+def read_likelihood(batches)
   # Initialize
   likelihoods = {}
   visited_folders = {}
@@ -19,7 +19,6 @@ def read_likelihood(logger, batches)
     subfolder_to_visit = /(?<subfolder>.*\/)/.match(batch_path)[:subfolder]
 
     Dir.glob(subfolder_to_visit + "RAxML_info*") do |file|
-      logger.debug("Reading likelihoods from file #{file}")
 
       likelihoods_tree_prefix = /RAxML_info.(?<prefix>.*)/.match(file)[:prefix]
 
