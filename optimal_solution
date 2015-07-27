@@ -30,9 +30,12 @@ class OptimalSolution < Thor
   option :crop_partitions, :type => :numeric, :default => 2, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 10, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 8, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
+  option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
+         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
+                  "Example: '-P 2' "
 
   def generate
 
@@ -81,10 +84,7 @@ class OptimalSolution < Thor
     tree = tree.set_edge_length.midpoint_root
 
     # Test each distribution and save best distribution
-    best_distribution = []
-    best_dist_operations_maximum = 0
-    best_dist_operations_optimized = Float::INFINITY
-    distributions.each_with_index do |distribution, index|
+    results = Parallel.map_with_index(distributions, :in_processes => options[:number_of_processes]) do |distribution, index|
       dist_operations_maximum = 0
       dist_operations_optimized = 0
 
@@ -111,25 +111,20 @@ class OptimalSolution < Thor
 
       end
 
-      # Check if it the current distribution has a minimal largest bin
-      if dist_operations_optimized < best_dist_operations_optimized
-        best_distribution = distribution
-        best_dist_operations_optimized = dist_operations_optimized
-        best_dist_operations_maximum = dist_operations_maximum
-        puts "Found new minimum: #{best_dist_operations_optimized} operations in largest bin"
-      end
-
       # Progress indicator
       print "." if index % (distributions.size / 100) == 0
+
+      [dist_operations_optimized, dist_operations_maximum, distribution]
     end
 
+    minimum = results.min_by(&:first)
 
-    best_dist_savings = ((best_dist_operations_maximum-best_dist_operations_optimized).to_f/best_dist_operations_maximum.to_f*100).round(2)
-    puts "Absolute minimum #{best_dist_operations_optimized} with savings of #{best_dist_savings} in largest bin. Distribution"
-    pp best_distribution
+    savings_in_largest_bin = ((minimum[1] - minimum[0]).to_f/minimum[1].to_f*100).round(2)
+    puts "Absolute minimum #{minimum[0]} with savings of #{savings_in_largest_bin} in largest bin. Distribution"
+    pp minimum[2]
 
     csv_output = []
-    best_distribution.each_with_index do |bin, bin_index|
+    minimum[2].each_with_index do |bin, bin_index|
       bin.each_with_index do |element|
         csv_output << {element: element.keys[0], bin: bin_index, partition: element.values[0]}
       end
@@ -149,9 +144,11 @@ class OptimalSolution < Thor
 
     # Output parameters to CSV for R
     program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root,
-                                  options[:number_of_bins] => options[:number_of_bins], options[:crop_partitions] => options[:crop_partitions],
+                                  options[:number_of_bins] => options[:number_of_bins],
+                                  options[:crop_partitions] => options[:crop_partitions],
                                   options[:crop_sites_per_partition] => options[:crop_sites_per_partition],
-                                  best_dist_savings_in_largest_bin: best_dist_savings,
+                                  options[:number_of_processes] => options[:number_of_processes],
+                                  savings_in_largest_bin: savings_in_largest_bin, operations_optimized: minimum[0],
                                   program_runtime: program_runtime, data_file: data_file,
                                   graph_file_name: graph_file_name}
 
