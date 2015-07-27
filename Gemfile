@@ -5,5 +5,5 @@ source "https://rubygems.org"
 gem 'descriptive_statistics'
 gem 'logger'
 gem 'stackprof'
-gem 'rinruby'
+gem 'thor'
 gem 'parallel'

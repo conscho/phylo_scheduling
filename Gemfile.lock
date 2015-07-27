@@ -4,8 +4,8 @@ GEM
     descriptive_statistics (2.5.1)
     logger (1.2.8)
     parallel (1.6.0)
-    rinruby (2.0.3)
     stackprof (0.2.7)
+    thor (0.19.1)
 
 PLATFORMS
   ruby
@@ -14,8 +14,8 @@ DEPENDENCIES
   descriptive_statistics
   logger
   parallel
-  rinruby
   stackprof
+  thor
 
 BUNDLED WITH
    1.10.5

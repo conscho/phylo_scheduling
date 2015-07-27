@@ -26,11 +26,11 @@ def read_likelihood(batches)
       load_file.each do |line|
         # Get starting tree likelihoods
         match_object = /Inference\[(?<tree_number>\d*).*likelihood (?<likelihood>.*),/.match(line)
-        likelihoods[batch_name.to_s + '-' + likelihoods_tree_prefix + '-' + match_object[:tree_number]] = match_object[:likelihood].to_f unless match_object.nil?
+        likelihoods[batch_name + '-' + likelihoods_tree_prefix + '-' + match_object[:tree_number]] = match_object[:likelihood].to_f unless match_object.nil?
 
         # Get ML tree likelihoods
         match_object = /Inference\[(?<tree_number>\d*).*Likelihood: (?<likelihood>.*) tree/.match(line)
-        likelihoods[batch_name.to_s + '_ml' + '-' + likelihoods_tree_prefix + '-' + match_object[:tree_number]] = match_object[:likelihood].to_f unless match_object.nil?
+        likelihoods[batch_name + '_ml' + '-' + likelihoods_tree_prefix + '-' + match_object[:tree_number]] = match_object[:likelihood].to_f unless match_object.nil?
       end
 
       load_file.close
@@ -111,6 +111,7 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
     file.write("#{taxa_name} #{taxa_nucleotides}\n")
   end
   file.close
+  puts "Removed identical sites from partition and phylip file and saved to #{reduced_partition_file} and #{reduced_phylip_file}"
 
   return reduced_number_of_sites, reduced_partitions, reduced_phylip_data, reduced_partition_file, reduced_phylip_file
 end
