@@ -4,6 +4,7 @@ require 'rubygems'
 require 'thor'
 require 'parallel'
 require 'fileutils'
+require 'ruby-progressbar'
 
 require './lib/helper'
 require './lib/newick'
@@ -78,7 +79,7 @@ class Statistics < Thor
                         Dir.glob(batch_path).first(options[:sample_trees].to_i)
                       end
 
-      csv_output << Parallel.map(list_of_trees, :in_processes => options[:number_of_processes]) do |file|
+      csv_output << Parallel.map(list_of_trees, :in_processes => options[:number_of_processes], :progress => "Checking all trees in batch #{batch_name}") do |file|
 
         # Initialize
         tree_output = []

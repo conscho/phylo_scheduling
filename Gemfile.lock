@@ -1,9 +1,8 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    descriptive_statistics (2.5.1)
-    logger (1.2.8)
     parallel (1.6.0)
+    ruby-progressbar (1.7.5)
     stackprof (0.2.7)
     thor (0.19.1)
 
@@ -11,9 +10,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  descriptive_statistics
-  logger
   parallel
+  ruby-progressbar
   stackprof
   thor
 

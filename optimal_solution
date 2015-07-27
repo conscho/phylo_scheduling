@@ -4,6 +4,7 @@ require 'rubygems'
 require 'thor'
 require 'parallel'
 require 'pp'
+require 'ruby-progressbar'
 
 require './lib/helper'
 require './lib/newick'
@@ -30,7 +31,7 @@ class OptimalSolution < Thor
   option :crop_partitions, :type => :numeric, :default => 1, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 18, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 16, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
@@ -84,7 +85,7 @@ class OptimalSolution < Thor
     tree = tree.set_edge_length.midpoint_root
 
     # Test each distribution and save best distribution
-    results = Parallel.map_with_index(distributions, :in_processes => options[:number_of_processes]) do |distribution, index|
+    results = Parallel.map(distributions, :in_processes => options[:number_of_processes], :progress => "Checking all distributions") do |distribution|
       dist_operations_maximum = 0
       dist_operations_optimized = 0
 
@@ -111,16 +112,13 @@ class OptimalSolution < Thor
 
       end
 
-      # Progress indicator
-      print "." if index % (distributions.size / 100) == 0
-
       [dist_operations_optimized, dist_operations_maximum, distribution]
     end
 
     minimum = results.min_by(&:first)
 
     savings_in_largest_bin = ((minimum[1] - minimum[0]).to_f/minimum[1].to_f*100).round(2)
-    puts "Absolute minimum #{minimum[0]} with savings of #{savings_in_largest_bin} in largest bin. Distribution"
+    puts "\nAbsolute minimum #{minimum[0]} with savings of #{savings_in_largest_bin} in largest bin. \nDistribution:"
     pp minimum[2]
 
     csv_output = []
