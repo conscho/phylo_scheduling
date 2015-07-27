@@ -27,10 +27,10 @@ class OptimalSolution < Thor
   option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-b",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-b 3' "
-  option :crop_partitions, :type => :numeric, :default => 2, :aliases => "-n",
+  option :crop_partitions, :type => :numeric, :default => 1, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 8, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 21, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
@@ -72,7 +72,7 @@ class OptimalSolution < Thor
     end.flatten.compact
 
     # Distribute to bins
-    puts "Calculating number of distributions for #{options[:crop_sites_per_partition]} sites for #{options[:crop_partitions]} partitions over #{options[:number_of_bins]} bin"
+    puts "Calculating number of distributions for #{options[:crop_sites_per_partition]} sites for #{options[:crop_partitions]} partitions over #{options[:number_of_bins]} bins"
     distributions = list_of_sites.distribute_to_bins(options[:number_of_bins]).to_a
     puts "Result: #{distributions.size} distributions"
 
