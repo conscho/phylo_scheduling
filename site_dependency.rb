@@ -4,14 +4,8 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
-require 'logger'
 require 'parallel'
 
-
-# Logger
-log_file = File.open("log/#{File.basename(__FILE__, ".rb")}.debug.log", 'a+')
-logger = Logger.new(MultiIO.new(STDOUT, log_file))
-logger.level = Logger::INFO
 
 # Program parameters
 batches =     { pars: './data/500/parsimony_trees/*parsimonyTree*',
@@ -31,17 +25,17 @@ number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
 # Drop identical sites
-if !partition_file.include?("uniq")
+unless partition_file.include?("uniq")
   number_of_sites, partitions, phylip_data, partition_file, phylip_file =
       drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
 end
 
-logger.info("Program started at #{start_time}")
-logger.info("Using parameters: Tree files: #{batches}; " \
-            "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
-            "Sample root nodes: #{sample_root}; Sample trees: #{sample_trees}; " \
-            "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
-            "Number of partitions: #{partitions.size}; Number of processes: #{number_of_processes}" )
+puts "Program started at #{start_time}"
+puts "Using parameters: Tree files: #{batches}; " \
+     "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
+     "Sample root nodes: #{sample_root}; Sample trees: #{sample_trees}; " \
+     "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
+     "Number of partitions: #{partitions.size}; Number of processes: #{number_of_processes}"
 
 
 
@@ -55,7 +49,7 @@ batches.each do |batch_name, batch_path|
     tree_output = []
 
     # Get data
-    logger.info("Processing file: #{file}")
+    puts "Processing file: #{file}"
     tree = NewickTree.fromFile(file)
     tree = tree.add_dna_sequences(phylip_data)
 
@@ -89,7 +83,7 @@ program_runtime = (Time.now - start_time).duration
 
 # Output results to CSV for R
 data_file = "output_#{File.basename(__FILE__, ".rb")}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
-logger.info("Writing data to #{data_file}")
+puts "Writing data to #{data_file}"
 csv_output.flatten.array_of_hashes_to_csv_file(data_file)
 
 
@@ -102,7 +96,7 @@ program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root
 
 parameter_file = "output_#{File.basename(__FILE__, ".rb")}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
 program_parameters_output.to_csv_file(parameter_file)
-logger.info("Program parameters written to #{parameter_file}")
+puts "Program parameters written to #{parameter_file}"
 
 
-logger.info("Programm finished at #{Time.now}. Runtime: #{program_runtime}")
+puts "Programm finished at #{Time.now}. Runtime: #{program_runtime}"
