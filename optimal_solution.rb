@@ -15,13 +15,13 @@ logger = Logger.new(MultiIO.new(STDOUT, log_file))
 logger.level = Logger::INFO
 
 # Program parameters
-tree_file = "./data/7/parsimony_trees/RAxML_parsimonyTree.T2.RUN.0"
-partition_file = './data/7/7.partitions.uniq'
-phylip_file =    './data/7/7.phy.uniq'
+tree_file = "./data/59/parsimony_trees/RAxML_result.T4.RUN.0"
+partition_file = './data/59/59.partitions.uniq'
+phylip_file =    './data/59/59.phy.uniq'
 sample_root = 'midpoint' # Enter the amount of nodes (>= 2) that should be used to root the tree . Enter "all" for all nodes. Enter "midpoint" for midpoint root.
-number_of_bins = 4
-crop_partitions = 2
-crop_sites_per_partition = 6 # Recommended maximum total sites to bins: 20/2 | 14/3 | 12/4
+number_of_bins = 2
+crop_partitions = 3
+crop_sites_per_partition = 6 # Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12
 
 # Initialize
 start_time = Time.now
@@ -53,8 +53,9 @@ list_of_sites = partitions.map do |partition_name, partition_range|
 end.flatten.compact
 
 # Distribute to bins
+logger.info("Calculating number of distributions for #{crop_sites_per_partition} sites for #{crop_partitions} partitions over #{number_of_bins} bin")
 distributions = list_of_sites.distribute_to_bins(number_of_bins).to_a
-logger.info("Checking #{distributions.size} distributions for #{crop_sites_per_partition} sites for #{crop_partitions} partitions over #{number_of_bins} bin")
+logger.info("Result: #{distributions.size} distributions")
 
 # Get data
 tree = NewickTree.fromFile(tree_file)
@@ -67,7 +68,7 @@ tree = tree.set_edge_length.midpoint_root
 best_distribution = []
 best_dist_operations_maximum = 0
 best_dist_operations_optimized = Float::INFINITY
-distributions.each do |distribution|
+distributions.each_with_index do |distribution, index|
   dist_operations_maximum = 0
   dist_operations_optimized = 0
 
@@ -88,7 +89,7 @@ distributions.each do |distribution|
 
     # Get the operations count for the largest bin -> bottleneck
     if bin_operations_optimized > dist_operations_optimized
-      dist_operations_optimized = bin_operations_maximum
+      dist_operations_optimized = bin_operations_optimized
       dist_operations_maximum = bin_operations_maximum
     end
 
@@ -101,6 +102,9 @@ distributions.each do |distribution|
     best_dist_operations_maximum = dist_operations_maximum
     logger.info("Found new minimum: #{best_dist_operations_optimized} operations in largest bin")
   end
+
+  # Progress indicator
+  print "." if index % (distributions.size / 100) == 0
 end
 
 
