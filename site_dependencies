@@ -117,9 +117,9 @@ class SiteDependencies < Thor
     # Output parameters to CSV for R
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
     program_parameters_output = {phylip_file: phylip_file,
-                                 options[:sample_root] => options[:sample_root],
-                                 options[:sample_trees] => options[:sample_trees],
-                                 options[:number_of_processes] => options[:number_of_processes],
+                                 sample_root: options[:sample_root],
+                                 sample_trees: options[:sample_trees],
+                                 number_of_processes: options[:number_of_processes],
                                  number_of_partitions: partitions.size,
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                  program_runtime: program_runtime, data_file: data_file,

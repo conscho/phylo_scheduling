@@ -171,11 +171,11 @@ class Statistics < Thor
 
     # Output parameters to CSV for R
     program_parameters_output = { phylip_file: phylip_file,
-                                  options[:sample_root] => options[:sample_root],
-                                  options[:sample_trees] => options[:sample_trees],
-                                  options[:compare_with_likelihood] => options[:compare_with_likelihood],
-                                  options[:number_of_processes] => options[:number_of_processes],
-                                  options[:split_partitions] => options[:split_partitions],
+                                  sample_root: options[:sample_root],
+                                  samplte_trees: options[:sample_trees],
+                                  compare_with_likelihood: options[:compare_with_likelihood],
+                                  number_of_processes: options[:number_of_processes],
+                                  split_partitions: options[:split_partitions],
                                   number_of_partitions: partitions.size,
                                   number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                   program_runtime: program_runtime, data_file: data_file,

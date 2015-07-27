@@ -30,7 +30,7 @@ class OptimalSolution < Thor
   option :crop_partitions, :type => :numeric, :default => 1, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 21, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 18, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
@@ -144,10 +144,10 @@ class OptimalSolution < Thor
 
     # Output parameters to CSV for R
     program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root,
-                                  options[:number_of_bins] => options[:number_of_bins],
-                                  options[:crop_partitions] => options[:crop_partitions],
-                                  options[:crop_sites_per_partition] => options[:crop_sites_per_partition],
-                                  options[:number_of_processes] => options[:number_of_processes],
+                                  number_of_bins: options[:number_of_bins],
+                                  crop_partitions: options[:crop_partitions],
+                                  crop_sites_per_partition: options[:crop_sites_per_partition],
+                                  number_of_processes: options[:number_of_processes],
                                   savings_in_largest_bin: savings_in_largest_bin, operations_optimized: minimum[0],
                                   program_runtime: program_runtime, data_file: data_file,
                                   graph_file_name: graph_file_name}
