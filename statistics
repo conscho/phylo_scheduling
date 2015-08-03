@@ -38,7 +38,7 @@ class Statistics < Thor
   option :number_of_processes, :type => :numeric, :default => 0, :aliases => "-P",
          :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
                   "Example: '-P 4' "
-  option :split_partitions, :type => :boolean, :default => false, :aliases => "-s",
+  option :split_partitions, :type => :boolean, :default => true, :aliases => "-s",
          :desc => "Split each partition in the middle to get an example of savings loss due to splitting partitions. " \
                   "Example: '-s true' "
 
@@ -133,7 +133,7 @@ class Statistics < Thor
                                ratio_of_savings: (((result_until_split[0] + result_after_split[0]) -
                                    (result_until_split[1] + result_after_split[1])).to_f /
                                    (result_until_split[0] + result_after_split[0]).to_f * 100),
-                               options[:split_partitions] => 1 }
+                               split_partitions: 1 }
 
             end
 
@@ -142,7 +142,7 @@ class Statistics < Thor
             tree_output << { batch: batch_name, tree: file, likelihood: likelihood,
                              root_node: root_index.to_s, height: height, partition: partition_name.to_s,
                              operations_maximum: result[0], operations_optimized: result[1],
-                             ratio_of_savings: result[2], options[:split_partitions] => 0 }
+                             ratio_of_savings: result[2], split_partitions: 0 }
 
           end
 

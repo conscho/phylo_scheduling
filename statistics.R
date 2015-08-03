@@ -43,7 +43,7 @@ for (parameter.file in files) {
   gp = ggplot(aggregatedData, aes(batch, ratio_of_savings)) + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " savings per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
-  ggplotTitle = ggtitle(paste("Boxplot: Savings per partition for each tree\n", parametersTitle))
+  ggplotTitle = ggtitle(paste("Boxplot: Savings per partition for each batch\n", parametersTitle))
   gp = ggplot(subsetRawData, aes(partition, ratio_of_savings, color=batch)) + ggplotRotateLabel + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " savings per partition", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
@@ -51,11 +51,11 @@ for (parameter.file in files) {
   gp = ggplot(rawData, aes(partition, ratio_of_savings, color=factor(split_partitions))) + ggplotRotateLabel + geom_boxplot() + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " split loss comparison per partition", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
-  ggplotTitle = ggtitle(paste("Boxplot: Savings-loss due to partition split per partition\n", parametersTitle))
+  ggplotTitle = ggtitle(paste("Boxplot: Savings-ratio-loss due to partition split per partition\n", parametersTitle))
   gp = ggplot(splitData, aes(partition, ratio_split_loss)) + geom_boxplot(alpha=0.5, color="gray") + ggplotRotateLabel + geom_jitter(alpha=0.2, aes(color=batch), position = position_jitter(width = 0.05)) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " split loss per partition", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
-  ggplotTitle = ggtitle(paste("Boxplot: Savings loss due to partition split per batch including mean (red dot)\n", parametersTitle))
+  ggplotTitle = ggtitle(paste("Boxplot: Savings-ratio-loss due to partition split per batch including mean (red dot)\n", parametersTitle))
   gp = ggplot(splitData, aes(batch, ratio_split_loss)) + geom_boxplot(alpha=0.5, color="gray") + geom_jitter(alpha=0.1, position = position_jitter(width = 0.05)) + stat_summary(fun.y=mean, colour="red", geom="point", size = 3) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " splitt loss per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   

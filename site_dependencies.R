@@ -6,7 +6,7 @@ ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = elemen
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
-files <- list.files("output_site_dependency", pattern = "*parameters.csv", full.names = TRUE)
+files <- list.files("output_site_dependencies", pattern = "*parameters.csv", full.names = TRUE)
 for (parameter.file in files) {
   
   programParameters = read.csv(parameter.file)
