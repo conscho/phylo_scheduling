@@ -498,8 +498,8 @@ class NewickTree
 
 
   # how many ML operations for specific partition_range
-  def ml_operations(partition_range)
-    @root.clear_calculated_subtrees # clear previous values
+  def ml_operations(partition_range, new_partition = true)
+    @root.clear_calculated_subtrees if new_partition # clear previous values
 
     count = 0 # count of calculations for each site without skipping SR (= subtree repeats)
     count_SR = 0 # count of calculations for each site with skipping SR (= subtree repeats)
@@ -510,6 +510,7 @@ class NewickTree
     end
     return [count, count_SR, ((count.to_f - count_SR.to_f) / count.to_f * 100)]
   end
+
 
   def get_site_dependencies
     @root.get_site_dependencies

@@ -1,6 +1,8 @@
 library(ggplot2)
 library(grid)
 library(dplyr)
+library(gridExtra)
+
 
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -23,8 +25,19 @@ for (parameter.file in files) {
   
   
   # Generate graphs
-    ggplotTitle = ggtitle(paste("Barchart: Site distribution\n", parametersTitle))
-  gp = ggplot(rawData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar() + ggplotTheme + ggplotTitle
-  ggsave(file=paste(graphFileName, " groundtruth", ".pdf" , sep = ""), plot = gp, w=10, h=10)
-
+  ggplotTitle = ggtitle(paste("Barchart: Site distribution to bins with operations\n", parametersTitle))
+  gp1 = ggplot(rawData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar(aes(x=bin, y=operations), stat="identity", colour="black") + ggplotTheme + ggplotTitle
+  
+  ggplotTitle = ggtitle(paste("Barchart: Site distribution to bins\n", parametersTitle))
+  gp2 = ggplot(rawData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar() + geom_text(stat='bin', aes(label=..count..), vjust =-0.5, position = "stack") + ggplotTheme + ggplotTitle
+  
+  pdf(paste(graphFileName, " groundtruth", ".pdf" , sep = ""), w=10, h=10)
+  grid.arrange(gp1, gp2, ncol=2)
+  dev.off()
+  
 }
+
+
+
+
+

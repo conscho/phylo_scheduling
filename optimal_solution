@@ -32,7 +32,7 @@ class OptimalSolution < Thor
   option :crop_partitions, :type => :numeric, :default => 3, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 6, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
@@ -119,13 +119,13 @@ class OptimalSolution < Thor
     minimum = results.min_by(&:first)
 
     savings_in_largest_bin = ((minimum[1] - minimum[0]).to_f/minimum[1].to_f*100).round(2)
-    puts "\nAbsolute minimum #{minimum[0]} with savings of #{savings_in_largest_bin} in largest bin. \nDistribution:"
+    puts "Absolute minimum #{minimum[0]} with savings of #{savings_in_largest_bin} in largest bin. \nDistribution:"
     pp minimum[2]
 
     csv_output = []
     minimum[2].each_with_index do |bin, bin_index|
-      bin.each_with_index do |element|
-        csv_output << {element: element.keys[0], bin: bin_index, partition: element.values[0]}
+      bin.each do |element|
+        csv_output << {bin: bin_index, element: element.keys[0], partition: element.values[0], operations: tree.ml_operations(element.keys, false)[1]}
       end
     end
 
