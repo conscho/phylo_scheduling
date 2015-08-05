@@ -22,18 +22,17 @@ for (parameter.file in files) {
 
   # Read and aggregate data
   rawData = read.csv(paste(programParameters[1, "data_file"]))
+  rawData$type <- "operations"
+  rawData2 = read.csv(paste(programParameters[1, "data_file"]))
+  rawData2$type <- "elements"
+  rawData2$operations <- 1
+  combData = rbind(rawData, rawData2)
   
   
   # Generate graphs
   ggplotTitle = ggtitle(paste("Barchart: Site distribution to bins with operations\n", parametersTitle))
-  gp1 = ggplot(rawData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar(aes(x=bin, y=operations), stat="identity", colour="black") + ggplotTheme + ggplotTitle
-  
-  ggplotTitle = ggtitle(paste("Barchart: Site distribution to bins\n", parametersTitle))
-  gp2 = ggplot(rawData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar() + geom_text(stat='bin', aes(label=..count..), vjust =-0.5, position = "stack") + ggplotTheme + ggplotTitle
-  
-  pdf(paste(graphFileName, " groundtruth", ".pdf" , sep = ""), w=10, h=10)
-  grid.arrange(gp1, gp2, ncol=2)
-  dev.off()
+  gp = ggplot(combData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar(aes(x=bin, y=operations), stat="identity", colour="black") + geom_text(aes(label=operations, bin, operations), position="stack", vjust = +1) + facet_grid(type~solution, scales = "free_y") + ggplotTheme + ggplotTitle
+  ggsave(file=paste(graphFileName, " groundtruth", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
 }
 

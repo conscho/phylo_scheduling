@@ -511,6 +511,10 @@ class NewickTree
     return [count, count_SR, ((count.to_f - count_SR.to_f) / count.to_f * 100)]
   end
 
+  def clear_calculated_subtrees
+    @root.clear_calculated_subtrees
+  end
+
 
   def get_site_dependencies
     @root.get_site_dependencies

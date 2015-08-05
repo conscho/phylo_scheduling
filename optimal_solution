@@ -29,10 +29,10 @@ class OptimalSolution < Thor
   option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-b",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-b 3' "
-  option :crop_partitions, :type => :numeric, :default => 3, :aliases => "-n",
+  option :crop_partitions, :type => :numeric, :default => 1, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 20, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
@@ -122,11 +122,23 @@ class OptimalSolution < Thor
     puts "Absolute minimum #{minimum[0]} with savings of #{savings_in_largest_bin} in largest bin. \nDistribution:"
     pp minimum[2]
 
+    # CSV output for best solution
+    tree.clear_calculated_subtrees
     csv_output = []
     minimum[2].each_with_index do |bin, bin_index|
       bin.each do |element|
-        csv_output << {bin: bin_index, element: element.keys[0], partition: element.values[0], operations: tree.ml_operations(element.keys, false)[1]}
+        csv_output << {solution: "best", bin: bin_index,
+                       element: element.keys[0], partition: element.values[0],
+                       operations: tree.ml_operations(element.keys, false)[1]}
       end
+    end
+
+    # CSV output for simple solution
+    list_of_sites.each_with_index do |site, site_index|
+      tree.clear_calculated_subtrees if (site_index % (list_of_sites.size / options[:number_of_bins])) == 0
+      csv_output << {solution: "simple", bin: (site_index / (list_of_sites.size / options[:number_of_bins])),
+                     element: site.keys[0], partition: site.values[0],
+                     operations: tree.ml_operations(site.keys, false)[1]}
     end
 
     program_runtime = (Time.now - start_time).duration
