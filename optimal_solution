@@ -26,13 +26,13 @@ class OptimalSolution < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/7/7.phy' "
-  option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-b",
+  option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-b",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-b 3' "
-  option :crop_partitions, :type => :numeric, :default => 1, :aliases => "-n",
+  option :crop_partitions, :type => :numeric, :default => 2, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
-  option :crop_sites_per_partition, :type => :numeric, :default => 20, :aliases => "-s",
+  option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
@@ -133,12 +133,26 @@ class OptimalSolution < Thor
       end
     end
 
+    # Generate simple solution
+    simple_solution = options[:number_of_bins].times.map do |element|
+      if (element * options[:number_of_bins] / options[:number_of_bins]) < (list_of_sites.size % options[:number_of_bins])
+        list_of_sites.size / options[:number_of_bins] + 1
+      else
+        list_of_sites.size / options[:number_of_bins]
+      end
+    end
+    simple_solution.map! do |bin|
+      list_of_sites.slice!((0..bin - 1))
+    end
+
     # CSV output for simple solution
-    list_of_sites.each_with_index do |site, site_index|
-      tree.clear_calculated_subtrees if (site_index % (list_of_sites.size / options[:number_of_bins])) == 0
-      csv_output << {solution: "simple", bin: (site_index / (list_of_sites.size / options[:number_of_bins])),
-                     element: site.keys[0], partition: site.values[0],
-                     operations: tree.ml_operations(site.keys, false)[1]}
+    simple_solution.each_with_index do |bin, bin_index|
+      tree.clear_calculated_subtrees
+      bin.each do |element|
+        csv_output << {solution: "simple", bin: bin_index,
+                       element: element.keys[0], partition: element.values[0],
+                       operations: tree.ml_operations(element.keys, false)[1]}
+      end
     end
 
     program_runtime = (Time.now - start_time).duration
