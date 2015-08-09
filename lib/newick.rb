@@ -515,6 +515,18 @@ class NewickTree
     @root.clear_calculated_subtrees
   end
 
+  def drop_taxon
+    # FIXME: Cropping of taxa which is a direct leaf of the root will crash. Does that happen?
+
+    leaves = @root.leaves
+    drop_taxon = leaves[leaves.size/2]
+
+    drop_taxon.parent.parent.addChild(drop_taxon.siblings[0])
+    drop_taxon.parent.parent.removeChild(drop_taxon.parent)
+
+    return self
+  end
+
 
   def get_site_dependencies
     @root.get_site_dependencies
