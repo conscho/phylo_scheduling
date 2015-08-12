@@ -32,6 +32,7 @@ for (parameter.file in files) {
   gp = ggplot(rawData, aes(x=reorder(site,count), y=count, color=partition)) + ggplotRotateLabel + geom_point(shape=19, alpha=1/4) + scale_x_discrete(breaks=NULL, name="sorted sites") + facet_wrap(~tree, ncol = 1) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " site dependency distribution for all trees", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
+  # FIXME: Summarizes results for more than one tree
   ggplotTitle = ggtitle(paste("Scatterplot: Distribution of site dependencies for one tree\n", parametersTitle))
   gp = ggplot(filter(rawData, grepl('RAxML_parsimonyTree', tree)), aes(x=reorder(site,count), y=count)) + ggplotRotateLabel + geom_point(shape=19, alpha=1/4) + scale_x_discrete(breaks=NULL, name="sorted sites") + facet_wrap(~partition, ncol = 3) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " site dependency distribution for one tree", ".pdf" , sep = ""), plot = gp, w=10, h=10)

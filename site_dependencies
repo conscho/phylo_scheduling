@@ -28,9 +28,6 @@ class SiteDependencies < Thor
   option :sample_trees, :default => 1, :aliases => "-t",
          :desc => "Enter the amount of trees that should be used for statistics. Enter 'all' for all trees. " \
                   "Example: '-t 12' "
-  option :number_of_processes, :type => :numeric, :default => 0, :aliases => "-P",
-         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
-                  "Example: '-P 4' "
 
   def generate
 
@@ -39,7 +36,9 @@ class SiteDependencies < Thor
     phylip_file = options[:phylip_file]
     sample_root = "midpoint" # Hard coded because it's the reasonable choice
     start_time = Time.now
-    csv_output = []
+    csv_site_dependencies = []
+    csv_graph_nodes = []
+    csv_graph_edges = []
     partitions = read_partitions(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 
@@ -66,11 +65,7 @@ class SiteDependencies < Thor
                       else
                         Dir.glob(batch_path).first(options[:sample_trees].to_i)
                       end
-
-      csv_output << Parallel.map(list_of_trees, :in_processes => options[:number_of_processes], :progress => "Checking all trees in batch #{batch_name}") do |file|
-
-        # Initialize
-        tree_output = []
+      list_of_trees.each do |file|
 
         # Get data
         puts "Processing file: #{file}"
@@ -85,19 +80,26 @@ class SiteDependencies < Thor
 
           result = tree.ml_operations(partition_range)
 
-          site_dependencies = tree.get_site_dependencies
+          site_dependencies_data = tree.get_site_dependencies
 
-          # Dirty Hack: If a site has zero dependencies it will not be present in the hash.
-          # That's why we iterate over all sites of the partition_range instead of all elements of site_dependencies. FIXME: will crash
+          # If a site has zero dependencies it will not be present in the hash, but still return 0 since we initialized the Hash with the value 0.
+          # That's why we iterate over all sites of the partition_range instead of all elements of site_dependencies_data[:dependencies_count].
           partition_range.each do |site_index|
-            tree_output << {batch: batch_name, tree: file, partition: partition_name.to_s,
-                            site: site_index, count: site_dependencies[site_index]}
+            csv_site_dependencies << {batch: batch_name, tree: file, partition: partition_name,
+                            site: site_index, count: site_dependencies_data[:dependencies_count][site_index]}
+            # Nodes for the site dependency graph
+            csv_graph_nodes << {batch: batch_name, tree: file, partition: partition_name, node: site_index}
           end
 
+          # Edges for the site dependency graph
+          site_dependencies_data[:edges].each do |key, value|
+            csv_graph_edges << { batch: batch_name, tree: file, partition: partition_name,
+                                 edge: key, weight: value }
+          end
+
+
+
         end
-
-        tree_output
-
       end
 
     end
@@ -112,18 +114,26 @@ class SiteDependencies < Thor
     # Output results to CSV for R
     data_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
     puts "Writing data to #{data_file}"
-    csv_output.flatten.array_of_hashes_to_csv_file(data_file)
+    csv_site_dependencies.flatten.array_of_hashes_to_csv_file(data_file)
+
+    edges_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} edges.csv"
+    puts "Writing data to #{edges_file}"
+    csv_graph_edges.flatten.array_of_hashes_to_csv_file(edges_file)
+
+    nodes_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} nodes.csv"
+    puts "Writing data to #{nodes_file}"
+    csv_graph_nodes.flatten.array_of_hashes_to_csv_file(nodes_file)
 
 
     # Output parameters to CSV for R
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
     program_parameters_output = {phylip_file: phylip_file,
-                                 sample_root: options[:sample_root],
+                                 sample_root: sample_root,
                                  sample_trees: options[:sample_trees],
-                                 number_of_processes: options[:number_of_processes],
                                  number_of_partitions: partitions.size,
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                  program_runtime: program_runtime, data_file: data_file,
+                                 edges_file: edges_file, nodes_file: nodes_file,
                                  graph_file_name: graph_file_name}
 
     parameter_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"

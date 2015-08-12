@@ -115,14 +115,14 @@ class NewickNode
       else
         count_of_children = count_of_children * 4 # 4 calculations if inner_leaf and 16 if inner_inner
         result = child.tree_traversal_and_operations_count(site_number)
-        count_of_grandchildren += result[0]
-        count_of_grandchildren_SR += result[1]
-        subtree_string += result[2]
+        count_of_grandchildren += result[:op_maximum]
+        count_of_grandchildren_SR += result[:op_optimized]
+        subtree_string += result[:subtree_string]
       end
     end
 
     # Count of operations with SR optimization & add calculated subtree (= equivalence classes)
-    count_SR = if @calculated_subtrees.has_key?(subtree_string)
+    op_optimized = if @calculated_subtrees.has_key?(subtree_string)
                  @calculated_subtrees[subtree_string] << site_number
                  0
                else
@@ -131,9 +131,9 @@ class NewickNode
                end
 
     # Count of operations without SR optimization
-    count = count_of_children + count_of_grandchildren
+    op_maximum = count_of_children + count_of_grandchildren
 
-    return [count, count_SR, subtree_string]
+    return {op_maximum: op_maximum, op_optimized: op_optimized, subtree_string: subtree_string}
   end
 
   # Clear the value @calculated_subtrees from all child nodes
@@ -144,14 +144,13 @@ class NewickNode
     end
   end
 
-  def get_site_dependencies
+  def dependencies_per_subtree
     collect_dependencies = []
     descendants.each do |node|
       next if node.calculated_subtrees.empty?
       collect_dependencies << node.calculated_subtrees.values
     end
     collect_dependencies.flatten(1).map {|x| x if x.size > 1}.compact
-        .flatten.each_with_object(Hash.new(0)) {|site, count| count[site] += 1}
   end
 
   # Set the @edgeLen to 1 from self and all child nodes
@@ -501,14 +500,14 @@ class NewickTree
   def ml_operations(partition_range, new_partition = true)
     @root.clear_calculated_subtrees if new_partition # clear previous values
 
-    count = 0 # count of calculations for each site without skipping SR (= subtree repeats)
-    count_SR = 0 # count of calculations for each site with skipping SR (= subtree repeats)
+    op_maximum = 0 # count of calculations for each site without skipping SR (= subtree repeats)
+    op_optimized = 0 # count of calculations for each site with skipping SR (= subtree repeats)
     partition_range.each do |site|
       result = @root.tree_traversal_and_operations_count(site)
-      count += result[0]
-      count_SR += result[1]
+      op_maximum += result[:op_maximum]
+      op_optimized += result[:op_optimized]
     end
-    return [count, count_SR, ((count.to_f - count_SR.to_f) / count.to_f * 100)]
+    return {op_maximum: op_maximum, op_optimized: op_optimized, savings: ((op_maximum.to_f - op_optimized.to_f) / op_maximum.to_f * 100)}
   end
 
   def clear_calculated_subtrees
@@ -529,7 +528,13 @@ class NewickTree
 
 
   def get_site_dependencies
-    @root.get_site_dependencies
+    dependencies = @root.dependencies_per_subtree
+
+    edges = dependencies.map {|sev| sev.combination(2).to_a }.
+        flatten(1).each_with_object(Hash.new(0)) {|dependency, count| count[dependency] += 1}
+    dependencies_count = dependencies.flatten.each_with_object(Hash.new(0)) {|site, count| count[site] += 1}
+
+    return {dependencies_count: dependencies_count, edges: edges}
   end
 
   # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file. Required for midpointRoot

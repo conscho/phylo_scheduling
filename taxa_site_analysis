@@ -95,8 +95,8 @@ class OptimalSolution < Thor
 
           tree_output << { tree: options[:tree_file],
                            partition: partition_name.to_s,
-                           operations_maximum: result[0], operations_optimized: result[1],
-                           ratio_of_savings: result[2],
+                           operations_maximum: result[:op_maximum], operations_optimized: result[:op_optimized],
+                           ratio_of_savings: result[:savings],
                            number_of_sites: crop_sites, number_of_taxa: number_of_taxa - number_of_dropped_taxa }
         end
       end

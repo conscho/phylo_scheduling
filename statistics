@@ -128,11 +128,11 @@ class Statistics < Thor
 
               tree_output << { batch: batch_name, tree: file, likelihood: likelihood,
                                root_node: root_index.to_s, height: height, partition: partition_name.to_s,
-                               operations_maximum: result_until_split[0] + result_after_split[0],
-                               operations_optimized: result_until_split[1] + result_after_split[1],
-                               ratio_of_savings: (((result_until_split[0] + result_after_split[0]) -
-                                   (result_until_split[1] + result_after_split[1])).to_f /
-                                   (result_until_split[0] + result_after_split[0]).to_f * 100),
+                               operations_maximum: result_until_split[:op_maximum] + result_after_split[:op_maximum],
+                               operations_optimized: result_until_split[:op_optimized] + result_after_split[:op_optimized],
+                               ratio_of_savings: (((result_until_split[:op_maximum] + result_after_split[:op_maximum]) -
+                                   (result_until_split[:op_optimized] + result_after_split[:op_optimized])).to_f /
+                                   (result_until_split[:op_maximum] + result_after_split[:op_maximum]).to_f * 100),
                                split_partitions: 1 }
 
             end
@@ -141,8 +141,8 @@ class Statistics < Thor
 
             tree_output << { batch: batch_name, tree: file, likelihood: likelihood,
                              root_node: root_index.to_s, height: height, partition: partition_name.to_s,
-                             operations_maximum: result[0], operations_optimized: result[1],
-                             ratio_of_savings: result[2], split_partitions: 0 }
+                             operations_maximum: result[:op_maximum], operations_optimized: result[:op_optimized],
+                             ratio_of_savings: result[:savings], split_partitions: 0 }
 
           end
 

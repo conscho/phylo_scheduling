@@ -33,7 +33,7 @@ class OptimalSolution < Thor
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
   option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
-         :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12" \
+         :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12 " \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
          :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
@@ -101,8 +101,8 @@ class OptimalSolution < Thor
         # Iterate over all partitions
         partitions.each do |partition_name, partition_range|
           result = tree.ml_operations(partition_range)
-          bin_operations_maximum += result[0]
-          bin_operations_optimized += result[1]
+          bin_operations_maximum += result[:op_maximum]
+          bin_operations_optimized += result[:op_optimized]
         end
 
         # Get the operations count for the largest bin -> bottleneck
@@ -151,7 +151,7 @@ class OptimalSolution < Thor
       bin.each do |element|
         csv_output << {solution: "simple", bin: bin_index,
                        element: element.keys[0], partition: element.values[0],
-                       operations: tree.ml_operations(element.keys, false)[1]}
+                       operations: tree.ml_operations(element.keys, false)[:op_optimized]}
       end
     end
 
