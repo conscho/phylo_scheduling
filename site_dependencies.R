@@ -1,6 +1,7 @@
 library(ggplot2)
 library(grid)
 library(dplyr)
+library(igraph)
 
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -21,6 +22,12 @@ for (parameter.file in files) {
   
   # Read and aggregate data
   rawData = read.csv(paste(programParameters[1, "data_file"]))
+  edgesData = read.csv(paste(programParameters[1, "edges_file"]))
+  e <- filter(edgesData, batch == "pars_ml", partition == "gene1")
+  
+  g <- graph_from_data_frame(e, directed = FALSE)
+  
+  plot(g)
   
   
   # Generate graphs
