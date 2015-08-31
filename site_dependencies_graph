@@ -15,19 +15,22 @@ require './lib/hash'
 
 
 class SiteDependencies < Thor
-  desc "generate", "generate site dependencies distribution for RAxML output"
-  option :batches, :type => :hash, :required => true, :aliases => "-b",
-         :desc => "Which batches of trees you want to compare. " \
-                  "Example: '-b pars:./data/7/parsimony_trees/*parsimonyTree* rand_ml:./data/7/random_trees/*result*' "
+  desc "generate", "generate site dependencies graph for one partition of one tree"
+  option :tree_file, :required => true, :aliases => "-t",
+         :desc => "Which tree should be analyzed " \
+                  "Example: '-t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0' "
   option :partition_file, :required => true, :aliases => "-p",
          :desc => "Path to partition file " \
-                  "Example: '-p ./data/7/7.partitions' "
+                  "Example: '-p ./data/59/59.partitions' "
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
-                  "Example: '-l ./data/7/7.phy' "
-  option :sample_trees, :default => 1, :aliases => "-t",
-         :desc => "Enter the amount of trees that should be used for statistics. Enter 'all' for all trees. " \
-                  "Example: '-t 12' "
+                  "Example: '-l ./data/59/59.phy' "
+  option :choose_partition, :type => :numeric, :default => 0, :aliases => "-c",
+         :desc => "Choose which partition should be plotted. " \
+                  "Example: '-c 3' "
+  option :crop_sites, :type => :numeric, :default => 50, :aliases => "-r",
+         :desc => "Crop partiton to x sites. " \
+                  "Example: '-r 30' "
 
   def generate
 
@@ -55,42 +58,27 @@ class SiteDependencies < Thor
          "Number of partitions: #{partitions.size}"
 
 
-    options[:batches].each do |batch_name, batch_path|
+    # Get data
+    tree = NewickTree.fromFile(options[:tree_file])
+    tree = tree.add_dna_sequences(phylip_data)
 
-      # Shall we sample the trees
-      list_of_trees = if options[:sample_trees] == "all"
-                        Dir.glob(batch_path)
-                      else
-                        Dir.glob(batch_path).first(options[:sample_trees].to_i)
-                      end
-      list_of_trees.each do |file|
+    # Midpoint root
+    tree = tree.set_edge_length.midpoint_root
 
-        # Get data
-        puts "Processing file: #{file}"
-        tree = NewickTree.fromFile(file)
-        tree = tree.add_dna_sequences(phylip_data)
+    # Select partition based on user input
+    puts "Using partition named '#{partitions.keys[options[:choose_partition]]}'"
+    original_range = partitions.values[options[:choose_partition]]
+    cropped_range = (original_range.begin .. original_range.begin + options[:crop_sites] - 1) if options[:crop_sites] < original_range.size
 
-        # Midpoint root
-        tree = tree.set_edge_length.midpoint_root
+    result = tree.ml_operations(cropped_range)
 
-        # Iterate over all partitions
-        partitions.each do |partition_name, partition_range|
+    site_dependencies_data = tree.get_site_dependencies
 
-          result = tree.ml_operations(partition_range)
-
-          site_dependencies_data = tree.get_site_dependencies
-
-          # Edges for the site dependency graph
-          site_dependencies_data[:edges].each do |key, value|
-            csv_output << { from: key[0], to: key[1], weight: value, batch: batch_name, tree: file, partition: partition_name}
-          end
-
-
-
-        end
-      end
-
+    # Edges for the site dependency graph
+    site_dependencies_data[:edges].each do |key, value|
+      csv_output << { from: key[0], to: key[1], weight: value}
     end
+
 
 
     program_runtime = (Time.now - start_time).duration
@@ -100,18 +88,18 @@ class SiteDependencies < Thor
     FileUtils.mkdir_p(output_directory)
 
     # Output results to CSV for R
-    data_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} edges.csv"
-    puts "Writing data to #{edges_file}"
-    csv_output.array_of_hashes_to_csv_file(edges_file)
+    data_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
+    puts "Writing data to #{data_file}"
+    csv_output.array_of_hashes_to_csv_file(data_file)
 
 
     # Output parameters to CSV for R
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
-    program_parameters_output = {phylip_file: phylip_file,
-                                 sample_root: sample_root,
-                                 sample_trees: options[:sample_trees],
-                                 number_of_partitions: partitions.size,
+    program_parameters_output = {tree_file: options[:tree_file],
+                                 phylip_file: phylip_file,
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
+                                 partition_name: partitions.keys[options[:choose_partition]],
+                                 crop_sites: options[:crop_sites],
                                  program_runtime: program_runtime, data_file: data_file,
                                  graph_file_name: graph_file_name}
 

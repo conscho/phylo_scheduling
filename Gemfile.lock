@@ -14,6 +14,3 @@ DEPENDENCIES
   ruby-progressbar
   stackprof
   thor
-
-BUNDLED WITH
-   1.10.5
