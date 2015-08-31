@@ -25,10 +25,10 @@ class SiteDependencies < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :choose_partition, :type => :numeric, :default => 0, :aliases => "-c",
+  option :choose_partition, :type => :numeric, :default => 3, :aliases => "-c",
          :desc => "Choose which partition should be plotted. " \
                   "Example: '-c 3' "
-  option :crop_sites, :type => :numeric, :default => 50, :aliases => "-r",
+  option :crop_sites, :type => :numeric, :default => 4000, :aliases => "-r",
          :desc => "Crop partiton to x sites. " \
                   "Example: '-r 30' "
 
@@ -67,10 +67,11 @@ class SiteDependencies < Thor
 
     # Select partition based on user input
     puts "Using partition named '#{partitions.keys[options[:choose_partition]]}'"
-    original_range = partitions.values[options[:choose_partition]]
-    cropped_range = (original_range.begin .. original_range.begin + options[:crop_sites] - 1) if options[:crop_sites] < original_range.size
+    partition_range = partitions.values[options[:choose_partition]]
+    # Crop sites
+    partition_range = (partition_range.begin .. partition_range.begin + options[:crop_sites] - 1) if options[:crop_sites] < partition_range.size
 
-    result = tree.ml_operations(cropped_range)
+    result = tree.ml_operations(partition_range)
 
     site_dependencies_data = tree.get_site_dependencies
 
@@ -96,7 +97,6 @@ class SiteDependencies < Thor
     # Output parameters to CSV for R
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
     program_parameters_output = {tree_file: options[:tree_file],
-                                 phylip_file: phylip_file,
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                  partition_name: partitions.keys[options[:choose_partition]],
                                  crop_sites: options[:crop_sites],
