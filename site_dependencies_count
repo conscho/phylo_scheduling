@@ -37,8 +37,6 @@ class SiteDependencies < Thor
     sample_root = "midpoint" # Hard coded because it's the reasonable choice
     start_time = Time.now
     csv_site_dependencies = []
-    csv_graph_nodes = []
-    csv_graph_edges = []
     partitions = read_partitions(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 
@@ -89,13 +87,6 @@ class SiteDependencies < Thor
                             site: site_index, count: site_dependencies_data[:dependencies_count][site_index]}
           end
 
-          # Edges for the site dependency graph
-          site_dependencies_data[:edges].each do |key, value|
-            csv_graph_edges << { from: key[0], to: key[1], weight: value, batch: batch_name, tree: file, partition: partition_name}
-          end
-
-
-
         end
       end
 
@@ -113,10 +104,6 @@ class SiteDependencies < Thor
     puts "Writing data to #{data_file}"
     csv_site_dependencies.array_of_hashes_to_csv_file(data_file)
 
-    edges_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} edges.csv"
-    puts "Writing data to #{edges_file}"
-    csv_graph_edges.array_of_hashes_to_csv_file(edges_file)
-
 
     # Output parameters to CSV for R
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
@@ -126,7 +113,6 @@ class SiteDependencies < Thor
                                  number_of_partitions: partitions.size,
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                  program_runtime: program_runtime, data_file: data_file,
-                                 edges_file: edges_file,
                                  graph_file_name: graph_file_name}
 
     parameter_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"

@@ -22,12 +22,6 @@ for (parameter.file in files) {
   
   # Read and aggregate data
   rawData = read.csv(paste(programParameters[1, "data_file"]))
-  edgesData = read.csv(paste(programParameters[1, "edges_file"]))
-  e <- filter(edgesData, batch == "pars_ml", partition == "gene1")
-  
-  g <- graph_from_data_frame(e, directed = FALSE)
-  
-  plot(g)
   
   
   # Generate graphs
