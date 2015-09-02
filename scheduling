@@ -1,0 +1,166 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'thor'
+require 'parallel'
+require 'fileutils'
+require 'pp'
+require 'ruby-progressbar'
+
+require './lib/helper'
+require './lib/newick'
+require './lib/multi_io'
+require './lib/numeric'
+require './lib/array'
+require './lib/hash'
+require './lib/hash'
+
+
+class Scheduling < Thor
+  desc "generate", "schedule partitions on bins considering subtree repeats for one tree"
+  option :tree_file, :required => true, :aliases => "-t",
+         :desc => "Which tree should be used " \
+                  "Example: '-t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0' "
+  option :partition_file, :required => true, :aliases => "-p",
+         :desc => "Path to partition file " \
+                  "Example: '-p ./data/59/59.partitions' "
+  option :phylip_file, :required => true, :aliases => "-l",
+         :desc => "Path to phylip file " \
+                  "Example: '-l ./data/59/59.phy' "
+  option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-n",
+         :desc => "Number of bins that the sites should be distributed to. " \
+                  "Example: '-n 3' "
+  option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
+         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
+                  "Example: '-P 2' "
+
+  def generate
+
+    # Initialize
+    partition_file = options[:partition_file]
+    phylip_file = options[:phylip_file]
+    sample_root = 'midpoint'
+    start_time = Time.now
+    partitions = read_partitions(partition_file)
+    number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
+    graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
+
+    # Drop identical sites
+    unless partition_file.include?("uniq")
+      number_of_sites, partitions, phylip_data, partition_file, phylip_file =
+          drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
+    end
+
+    puts "Program started at #{start_time}"
+    puts "Using parameters: Tree file: #{options[:tree_file]}; " \
+         "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
+         "Sample root nodes: #{sample_root}; " \
+         "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
+         "Number of partitions: #{partitions.size}"
+
+
+    # Get data
+    tree = NewickTree.fromFile(options[:tree_file])
+    tree = tree.add_dna_sequences(phylip_data)
+
+    # Midpoint root
+    tree = tree.set_edge_length.midpoint_root
+
+    # Get partition sizes
+    partitions.each do |partition_name, partition_range|
+      partitions[partition_name] = {partition_range: partition_range,
+                                    operations: tree.ml_operations(partition_range)[:op_optimized]}
+    end
+
+    # Calculate size of bins and round-flag
+    total_size = partitions.map {|key, value| value[:operations]}.reduce(:+)
+    bin_max_size = (total_size.to_f / options[:number_of_bins]).ceil
+    rounding_adjustment = bin_max_size * options[:number_of_bins] - total_size
+
+    # Initialize bin list
+    bins = Array.new(options[:number_of_bins]) {Hash.new}
+
+    # Sort partitions
+    remaining_partitions = partitions.sort_by {|key, value| value[:operations]}
+
+    full_bins = 0
+    bin_assigner = 0
+
+    partitions.size.times do
+      bin_size = if bins[bin_assigner] == {}
+                   0
+                 else
+                   bins[bin_assigner].map {|key, value| value[:operations]}.reduce(:+)
+                 end
+      if bin_size + remaining_partitions[0][1][:operations] <= bin_max_size
+        sliced_partition = remaining_partitions.slice!(0)
+        bins[bin_assigner].merge!({sliced_partition[0] => sliced_partition[1]})
+
+        # edge case handling for perfect fit
+        if bins[bin_assigner].map {|key, value| value[:operations]}.reduce(:+) == bin_max_size
+          full_bins += 1
+          bin_max_size -= 1 if full_bins == bins.size - rounding_adjustment
+        end
+      else
+        break
+      end
+      bin_assigner = (bin_assigner + 1) % bins.size
+    end
+
+
+    ####################
+    ## Sliding Window ##
+    ####################
+
+    # Calculate ratio of free space
+    free_space = bins.map {|bin| bin_max_size - bin.map {|key, value| value[:operations]}.reduce(:+)}
+    total_free_space = free_space.reduce(:+)
+    ratio = free_space.map {|bin_space| bin_space.to_f/total_free_space}
+
+    # Total sites that need to be distributed
+    total_sites = remaining_partitions.map {|partition| partition[1][:partition_range].size}.reduce(:+)
+
+    # Fill each bin
+    bins.size.times do
+      # How many sites need to go into the current bin
+      sites_for_bin = (ratio[bin_assigner] * total_sites).ceil # FIXME: It's probably better to round down and save overflow in last bin
+
+      until remaining_partitions.empty? do
+        # partition fits entirely in open space of bin -> move to next bin afterwards
+        if remaining_partitions[0][1][:partition_range].size == sites_for_bin
+          bins[bin_assigner].merge!({remaining_partitions[0][0] => remaining_partitions[0][1]})
+          remaining_partitions = remaining_partitions.drop(1)
+          break
+        # partition is bigger than space available -> crop partition + move to next bin afterwards
+        elsif remaining_partitions[0][1][:partition_range].size > sites_for_bin
+          bins[bin_assigner].merge!({remaining_partitions[0][0] =>
+                                      {partition_range: (remaining_partitions[0][1][:partition_range].begin .. remaining_partitions[0][1][:partition_range].begin + sites_for_bin - 1),
+                                       operations: remaining_partitions[0][1][:operations]}})
+
+          # Crop partition
+          remaining_partitions[0][1][:partition_range] =
+              (remaining_partitions[0][1][:partition_range].begin + sites_for_bin .. remaining_partitions[0][1][:partition_range].end)
+          break
+        # partition is smaller than open space -> stay in current bin + reduce available space + drop partition
+        else
+          bins[bin_assigner].merge!({remaining_partitions[0][0] => remaining_partitions[0][1]})
+          sites_for_bin -= remaining_partitions[0][1][:partition_range].size
+          remaining_partitions = remaining_partitions.drop(1)
+        end
+      end
+
+      bin_assigner = (bin_assigner + 1) % bins.size
+    end
+
+    puts bins.map {|bin| bin.map {|key, value| value[:operations]}.reduce(:+)}
+
+
+
+
+
+
+  end
+
+end
+
+Scheduling.start
