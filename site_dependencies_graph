@@ -25,10 +25,10 @@ class SiteDependencies < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :choose_partition, :type => :numeric, :default => 3, :aliases => "-c",
+  option :choose_partition, :type => :numeric, :default => 0, :aliases => "-c",
          :desc => "Choose which partition should be plotted. " \
                   "Example: '-c 3' "
-  option :crop_sites, :type => :numeric, :default => 4000, :aliases => "-r",
+  option :crop_sites, :type => :numeric, :default => 20, :aliases => "-r",
          :desc => "Crop partiton to x sites. " \
                   "Example: '-r 30' "
 
@@ -99,7 +99,7 @@ class SiteDependencies < Thor
     program_parameters_output = {tree_file: options[:tree_file],
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                  partition_name: partitions.keys[options[:choose_partition]],
-                                 crop_sites: options[:crop_sites],
+                                 crop_sites: partition_range.size,
                                  program_runtime: program_runtime, data_file: data_file,
                                  graph_file_name: graph_file_name}
 
