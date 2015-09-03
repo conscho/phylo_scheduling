@@ -142,7 +142,7 @@ class Statistics < Thor
             tree_output << { batch: batch_name, tree: file, likelihood: likelihood,
                              root_node: root_index.to_s, height: height, partition: partition_name.to_s,
                              operations_maximum: result[:op_maximum], operations_optimized: result[:op_optimized],
-                             ratio_of_savings: result[:savings], split_partitions: 0 }
+                             ratio_of_savings: result[:op_savings], split_partitions: 0 }
 
           end
 

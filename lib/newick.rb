@@ -496,18 +496,18 @@ class NewickTree
   end
 
 
-  # how many ML operations for specific partition_range
-  def ml_operations(partition_range, new_partition = true)
+  # how many ML operations for specific partition_sites
+  def ml_operations(partition_sites, new_partition = true)
     @root.clear_calculated_subtrees if new_partition # clear previous values
 
     op_maximum = 0 # count of calculations for each site without skipping SR (= subtree repeats)
     op_optimized = 0 # count of calculations for each site with skipping SR (= subtree repeats)
-    partition_range.each do |site|
+    partition_sites.each do |site|
       result = @root.tree_traversal_and_operations_count(site)
       op_maximum += result[:op_maximum]
       op_optimized += result[:op_optimized]
     end
-    return {op_maximum: op_maximum, op_optimized: op_optimized, savings: ((op_maximum.to_f - op_optimized.to_f) / op_maximum.to_f * 100)}
+    return {op_maximum: op_maximum, op_optimized: op_optimized, op_savings: ((op_maximum.to_f - op_optimized.to_f) / op_maximum.to_f * 100)}
   end
 
   def clear_calculated_subtrees

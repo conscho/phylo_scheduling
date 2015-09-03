@@ -3,7 +3,7 @@ def read_partitions(file_name)
   in_file = File.new(file_name)
   in_file.each do |line|
     match_object = /, ?(?<name>.*) = (?<start>\d+)-(?<end>\d+)/.match(line)
-    partitions[(match_object[:name].to_sym)] = ((match_object[:start].to_i - 1) .. (match_object[:end].to_i - 1))
+    partitions[(match_object[:name].to_sym)] = ((match_object[:start].to_i - 1) .. (match_object[:end].to_i - 1)).to_a
   end
   in_file.close
   return partitions
@@ -79,19 +79,19 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
 
   # Remove duplicates per partition
   all_sites = phylip_data.values.map {|taxa| taxa.split('') }.transpose
-  uniq_sites = partitions.each_value.map { |partition_range| all_sites[partition_range].uniq }
+  uniq_sites = partitions.each_value.map { |partition_sites| all_sites[partition_sites].uniq }
 
   # Update partition data
   start_partition = -1
-  reduced_partition_ranges = uniq_sites.map do |partition|
-    reduced_partition_range = ((start_partition + 1) .. (start_partition + partition.size))
+  reduced_partition_sitess = uniq_sites.map do |partition|
+    reduced_partition_sites = ((start_partition + 1) .. (start_partition + partition.size))
     start_partition += partition.size            # TODO: Try one liner?
-    reduced_partition_range
+    reduced_partition_sites
   end
   reduced_number_of_sites = start_partition + 1
 
   # Save partition data
-  reduced_partitions = Hash[partitions.keys.zip(reduced_partition_ranges)]
+  reduced_partitions = Hash[partitions.keys.zip(reduced_partition_sitess)]
 
   # Save phylip data
   reduced_phylip_data = Hash[phylip_data.keys.zip(uniq_sites.flatten(1).transpose.map {|taxa| taxa.join})]
@@ -99,8 +99,8 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
   # Save reduced data to disk
   reduced_partition_file = partition_file + '.uniq'
   file = File.new(reduced_partition_file, 'w')
-  reduced_partitions.each do |partition_name, partition_range|
-    file.write("DNA, #{partition_name} = #{partition_range.begin + 1}-#{partition_range.end + 1}\n")
+  reduced_partitions.each do |partition_name, partition_sites|
+    file.write("DNA, #{partition_name} = #{partition_sites.first + 1}-#{partition_sites.last + 1}\n")
   end
   file.close
 
