@@ -12,6 +12,7 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
+require './lib/partition_array'
 
 
 class SiteDependencies < Thor
@@ -37,7 +38,7 @@ class SiteDependencies < Thor
     sample_root = "midpoint" # Hard coded because it's the reasonable choice
     start_time = Time.now
     csv_output = []
-    partitions = read_partitions(partition_file)
+    partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 
 
@@ -74,16 +75,16 @@ class SiteDependencies < Thor
         tree = tree.set_edge_length.midpoint_root
 
         # Iterate over all partitions
-        partitions.each do |partition_name, partition_range|
+        partitions.each do |partition|
 
-          result = tree.ml_operations(partition_range)
+          result = tree.ml_operations(partition.sites)
 
           site_dependencies_data = tree.get_site_dependencies
 
           # If a site has zero dependencies it will not be present in the hash, but still return 0 since we initialized the Hash with the value 0.
           # That's why we iterate over all sites of the partition_range instead of all elements of site_dependencies_data[:dependencies_count].
-          partition_range.each do |site_index|
-            csv_output << {batch: batch_name, tree: file, partition: partition_name,
+          partition.sites.each do |site_index|
+            csv_output << {batch: batch_name, tree: file, partition: partition.name,
                             site: site_index, count: site_dependencies_data[:dependencies_count][site_index]}
           end
 

@@ -12,6 +12,7 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
+require './lib/partition_array'
 
 
 class SiteDependencies < Thor
@@ -40,7 +41,7 @@ class SiteDependencies < Thor
     sample_root = "midpoint" # Hard coded because it's the reasonable choice
     start_time = Time.now
     csv_output = []
-    partitions = read_partitions(partition_file)
+    partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 
 
@@ -66,12 +67,12 @@ class SiteDependencies < Thor
     tree = tree.set_edge_length.midpoint_root
 
     # Select partition based on user input
-    puts "Using partition named '#{partitions.keys[options[:choose_partition]]}'"
-    partition_range = partitions.values[options[:choose_partition]]
+    partition = partitions.list[options[:choose_partition]]
+    puts "Using partition named '#{partition.name}'"
     # Crop sites
-    partition_range = (partition_range.begin .. partition_range.begin + options[:crop_sites] - 1) if options[:crop_sites] < partition_range.size
+    partition_sites = (partition.sites.first ... partition.sites.first + options[:crop_sites]) if options[:crop_sites] < partition.number_of_sites
 
-    result = tree.ml_operations(partition_range)
+    result = tree.ml_operations(partition_sites)
 
     site_dependencies_data = tree.get_site_dependencies
 
@@ -98,8 +99,8 @@ class SiteDependencies < Thor
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
     program_parameters_output = {tree_file: options[:tree_file],
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
-                                 partition_name: partitions.keys[options[:choose_partition]],
-                                 crop_sites: partition_range.size,
+                                 partition_name: partition.name,
+                                 crop_sites: partition_sites.size,
                                  program_runtime: program_runtime, data_file: data_file,
                                  graph_file_name: graph_file_name}
 

@@ -11,6 +11,7 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
+require './lib/partition_array'
 
 
 class OptimalSolution < Thor
@@ -20,10 +21,10 @@ class OptimalSolution < Thor
                   "Example: '-t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0' "
   option :partition_file, :required => true, :aliases => "-p",
          :desc => "Path to partition file " \
-                  "Example: '-p ./data/7/7.partitions' "
+                  "Example: '-p ./data/59/59.partitions' "
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
-                  "Example: '-l ./data/7/7.phy' "
+                  "Example: '-l ./data/59/59.phy' "
   option :crop_partitions, :type => :numeric, :default => 3, :aliases => "-n",
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
@@ -44,7 +45,7 @@ class OptimalSolution < Thor
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
     start_time = Time.now
-    partitions = read_partitions(partition_file)
+    partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
@@ -88,13 +89,13 @@ class OptimalSolution < Thor
       # TODO: Verify reasonable input parameters
       (options[:crop_sites_start]..options[:crop_sites_end]).each do |crop_sites|
         # Crop partition + sites
-        partitions.each_with_index do |(partition_name, partition_range), partition_index|
+        partitions.each_with_index do |partition, partition_index|
           next if partition_index >= options[:crop_partitions]
-          next if crop_sites > partition_range.size
-          result = tree.ml_operations(partition_range.begin .. partition_range.begin + crop_sites - 1)
+          next if crop_sites > partition.number_of_sites
+          result = tree.ml_operations(partition.sites.first ... partition.sites.first + crop_sites)
 
           tree_output << { tree: options[:tree_file],
-                           partition: partition_name.to_s,
+                           partition: partition.name,
                            operations_maximum: result[:op_maximum], operations_optimized: result[:op_optimized],
                            ratio_of_savings: result[:op_savings],
                            number_of_sites: crop_sites, number_of_taxa: number_of_taxa - number_of_dropped_taxa }

@@ -13,6 +13,7 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
+require './lib/partition_array'
 
 
 class OptimalSolution < Thor
@@ -46,7 +47,7 @@ class OptimalSolution < Thor
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
     start_time = Time.now
-    partitions = read_partitions(partition_file)
+    partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
@@ -67,10 +68,10 @@ class OptimalSolution < Thor
 
     # Crop partitions and list all sites
     partitions_limiter = 0
-    list_of_sites = partitions.map do |partition_name, partition_range|
+    list_of_sites = partitions.map do |partition|
       partitions_limiter += 1
       next if partitions_limiter > options[:crop_partitions]
-      (partition_range.begin .. partition_range.begin + options[:crop_sites_per_partition] - 1).map {|i| {i => partition_name} }
+      (partition.sites.first ... partition.sites.first + options[:crop_sites_per_partition]).map {|i| {i => partition.name} }
     end.flatten.compact
 
     # Distribute to bins
