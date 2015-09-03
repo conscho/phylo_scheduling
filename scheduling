@@ -13,7 +13,8 @@ require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
-require './lib/hash'
+require './lib/bin_array'
+require './lib/partition_array'
 
 
 class Scheduling < Thor
@@ -41,7 +42,7 @@ class Scheduling < Thor
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
     start_time = Time.now
-    partitions = read_partitions(partition_file)
+    partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
@@ -67,45 +68,21 @@ class Scheduling < Thor
     tree = tree.set_edge_length.midpoint_root
 
     # Get partition sizes
-    partitions.each do |partition_name, partition_range|
-      partitions[partition_name] = {partition_range: partition_range,
-                                    operations: tree.ml_operations(partition_range)[:op_optimized]}
-    end
-
-    # Calculate size of bins and round-flag
-    total_size = partitions.map {|key, value| value[:operations]}.reduce(:+)
-    bin_max_size = (total_size.to_f / options[:number_of_bins]).ceil
-    rounding_adjustment = bin_max_size * options[:number_of_bins] - total_size
+    partitions.ml_operations(tree)
 
     # Initialize bin list
-    bins = Array.new(options[:number_of_bins]) {Hash.new}
+    bins = BinArray.new(options[:number_of_bins])
 
-    # Sort partitions
-    remaining_partitions = partitions.sort_by {|key, value| value[:operations]}
+    # Set bin target size for sliding window heuristic
+    bins.set_bin_target_size(partitions.op_optimized_size)
 
-    full_bins = 0
-    bin_assigner = 0
+    # Sort partitions by op_optimized
+    partitions = partitions.sort
 
-    partitions.size.times do
-      bin_size = if bins[bin_assigner] == {}
-                   0
-                 else
-                   bins[bin_assigner].map {|key, value| value[:operations]}.reduce(:+)
-                 end
-      if bin_size + remaining_partitions[0][1][:operations] <= bin_max_size
-        sliced_partition = remaining_partitions.slice!(0)
-        bins[bin_assigner].merge!({sliced_partition[0] => sliced_partition[1]})
-
-        # edge case handling for perfect fit
-        if bins[bin_assigner].map {|key, value| value[:operations]}.reduce(:+) == bin_max_size
-          full_bins += 1
-          bin_max_size -= 1 if full_bins == bins.size - rounding_adjustment
-        end
-      else
-        break
-      end
-      bin_assigner = (bin_assigner + 1) % bins.size
-    end
+    # Initial fill: Fill sorted partitions into bins as far as possible without breaking
+    remaining_partitions = bins.initial_fill(partitions)
+    puts remaining_partitions
+    puts bins
 
 
     ####################
@@ -154,6 +131,23 @@ class Scheduling < Thor
 
     puts bins.map {|bin| bin.map {|key, value| value[:operations]}.reduce(:+)}
 
+    ## Optimization
+    sequence = bins.size.times.to_a.rotate(bin_assigner)
+    sequence.pop
+
+    10.times do
+      average_bin_size = bins.map {|bin| bin.map {|key, value| value[:operations]}.reduce(:+)}.reduce(:+)/bins.size
+      sequence.each do |bin_index|
+        bin_size = bins[bin_index].map {|key, value| value[:operations]}.reduce(:+)
+        if bin_size < average_bin_size
+          # Get from following bin
+          bins[(bin_index + 1) % bins.size].
+              elsif bin_size > average_bin_size
+          # Give following bin
+          bins[(bin_index + 1) % bins.size]
+        end
+      end
+    end
 
 
 
