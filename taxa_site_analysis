@@ -91,7 +91,7 @@ class OptimalSolution < Thor
         # Crop partition + sites
         partitions.each_with_index do |partition, partition_index|
           next if partition_index >= options[:crop_partitions]
-          next if crop_sites > partition.number_of_sites
+          next if crop_sites > partition.sites.size
           result = tree.ml_operations(partition.sites.first ... partition.sites.first + crop_sites)
 
           tree_output << { tree: options[:tree_file],

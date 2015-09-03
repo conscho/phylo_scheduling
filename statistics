@@ -122,7 +122,7 @@ class Statistics < Thor
             if options[:split_partitions]
 
               # Split in the middle of each partition
-              split_at = partition.number_of_sites / 2
+              split_at = partition.sites.size / 2
 
               result_until_split = tree.ml_operations(partition.sites.first .. (partition.sites.first + split_at))
               result_after_split = tree.ml_operations((partition.sites.first + split_at + 1) .. partition.sites.last)
