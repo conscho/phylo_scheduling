@@ -68,88 +68,37 @@ class Scheduling < Thor
     tree = tree.set_edge_length.midpoint_root
 
     # Get partition sizes
-    partitions.ml_operations(tree)
+    partitions.ml_operations!(tree)
 
     # Initialize bin list
     bins = BinArray.new(options[:number_of_bins])
 
     # Set bin target size for sliding window heuristic
-    bins.set_bin_target_size(partitions.op_optimized_size)
+    bins.set_bin_target_op_size!(partitions.op_optimized_size)
+    bins.set_bin_target_sites_size!(partitions.total_sites)
 
     # Sort partitions by op_optimized
-    partitions = partitions.sort
+    partitions.sort!
 
-    # Initial fill: Fill sorted partitions into bins as far as possible without breaking
+    # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
     remaining_partitions = bins.initial_fill(partitions)
-    puts remaining_partitions
-    puts bins
+    puts "Remaining partitions: #{remaining_partitions}"
+    puts "Current bin distribution: #{bins}"
 
 
-    ####################
-    ## Sliding Window ##
-    ####################
 
-    # Calculate ratio of free space
-    free_space = bins.map {|bin| bin_max_size - bin.map {|key, value| value[:operations]}.reduce(:+)}
-    total_free_space = free_space.reduce(:+)
-    ratio = free_space.map {|bin_space| bin_space.to_f/total_free_space}
+    ## Sliding Window
+    option = ["operations", "sites"]   # TODO: User Input
+    bins = bins.slice_fill(remaining_partitions, option[1])
+    bins.ml_operations!(tree)
+    puts "Current bin distribution: #{bins.to_s("fill_level")}"
 
-    # Total sites that need to be distributed
-    total_sites = remaining_partitions.map {|partition| partition[1][:partition_range].size}.reduce(:+)
-
-    # Fill each bin
-    bins.size.times do
-      # How many sites need to go into the current bin
-      sites_for_bin = (ratio[bin_assigner] * total_sites).ceil # FIXME: It's probably better to round down and save overflow in last bin
-
-      until remaining_partitions.empty? do
-        # partition fits entirely in open space of bin -> move to next bin afterwards
-        if remaining_partitions[0][1][:partition_range].size == sites_for_bin
-          bins[bin_assigner].merge!({remaining_partitions[0][0] => remaining_partitions[0][1]})
-          remaining_partitions = remaining_partitions.drop(1)
-          break
-        # partition is bigger than space available -> crop partition + move to next bin afterwards
-        elsif remaining_partitions[0][1][:partition_range].size > sites_for_bin
-          bins[bin_assigner].merge!({remaining_partitions[0][0] =>
-                                      {partition_range: (remaining_partitions[0][1][:partition_range].begin .. remaining_partitions[0][1][:partition_range].begin + sites_for_bin - 1),
-                                       operations: remaining_partitions[0][1][:operations]}})
-
-          # Crop partition
-          remaining_partitions[0][1][:partition_range] =
-              (remaining_partitions[0][1][:partition_range].begin + sites_for_bin .. remaining_partitions[0][1][:partition_range].end)
-          break
-        # partition is smaller than open space -> stay in current bin + reduce available space + drop partition
-        else
-          bins[bin_assigner].merge!({remaining_partitions[0][0] => remaining_partitions[0][1]})
-          sites_for_bin -= remaining_partitions[0][1][:partition_range].size
-          remaining_partitions = remaining_partitions.drop(1)
-        end
-      end
-
-      bin_assigner = (bin_assigner + 1) % bins.size
+    # Simple Optimization
+    20.times do
+      bins.slide_distribution!
+      bins.ml_operations!(tree)
+      puts "Current bin distribution: #{bins.to_s("fill_level")}"
     end
-
-    puts bins.map {|bin| bin.map {|key, value| value[:operations]}.reduce(:+)}
-
-    ## Optimization
-    sequence = bins.size.times.to_a.rotate(bin_assigner)
-    sequence.pop
-
-    10.times do
-      average_bin_size = bins.map {|bin| bin.map {|key, value| value[:operations]}.reduce(:+)}.reduce(:+)/bins.size
-      sequence.each do |bin_index|
-        bin_size = bins[bin_index].map {|key, value| value[:operations]}.reduce(:+)
-        if bin_size < average_bin_size
-          # Get from following bin
-          bins[(bin_index + 1) % bins.size].
-              elsif bin_size > average_bin_size
-          # Give following bin
-          bins[(bin_index + 1) % bins.size]
-        end
-      end
-    end
-
-
 
 
 
