@@ -24,7 +24,7 @@ for (parameter.file in files) {
   rawData = read.csv(paste(programParameters[1, "data_file"]))
   rawData$type <- "operations"
   rawData2 = read.csv(paste(programParameters[1, "data_file"]))
-  rawData2$type <- "elements"
+  rawData2$type <- "sites"
   rawData2$operations <- 1
   combData = rbind(rawData, rawData2)
   
