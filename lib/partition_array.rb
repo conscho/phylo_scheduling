@@ -43,12 +43,24 @@ class PartitionArray
     @list.empty?
   end
 
+  def replace(position, partition)
+    copy = self.dup
+    copy.list[position] = partition
+    copy
+  end
+
+  def drop(n)
+    self.dup.drop!(n)
+  end
+
   def drop!(n)
     @list = @list.drop(n)
+    self
   end
 
   def sort!
     @list = @list.sort
+    self
   end
 
   def size
@@ -104,8 +116,14 @@ class Partition
   end
 
   # Drop sites in the beginning of partition
+  def drop_sites(number)
+    self.dup.drop_sites!(number)
+  end
+
+  # Drop sites in the beginning of partition
   def drop_sites!(number)
     @sites = @sites.drop(number)
+    self
   end
 
   # Delete site from partition and return it
@@ -133,7 +151,11 @@ class Partition
   end
 
   def to_s
-    "Partition #{@name}, #{self.sites.size} elements"
+    "Partition #{@name}, #{self.sites.size} sites"
+  end
+
+  def to_csv(hash)
+    hash.merge({sites: @sites.size, partition: @name, operations: @op_optimized})
   end
 
   def size

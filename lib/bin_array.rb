@@ -9,13 +9,13 @@ class BinArray
     @list = Array.new(number_of_bins) {Bin.new}
   end
 
-  def initial_fill(partitions)
+  def initial_fill!(partitions)
     bin_assigner = 0
     full_bins = 0
     partitions.size.times do
       if @list[bin_assigner].size + partitions.first.size <= @bin_target_op_size
         @list[bin_assigner].add!(partitions.first)
-        partitions.drop!(1)
+        partitions = partitions.drop(1)
 
         # edge case handling for perfect fit
         if @list[bin_assigner].size == @bin_target_op_size
@@ -33,7 +33,8 @@ class BinArray
     partitions
   end
 
-  def slice_fill(remaining_partitions, option)
+  def slice_fill!(remaining_partitions, option)
+    # TODO: How to make the method not "in-place"?
 
     # Total number of sites that need to be distributed
     total_sites_remaining = remaining_partitions.total_sites
@@ -54,20 +55,20 @@ class BinArray
       until remaining_partitions.empty? do
 
         if remaining_partitions.first.sites.size == sites_for_bin # partition fits entirely in free space of bin
-          bin.add!(remaining_partitions.first, false)
-          remaining_partitions.drop!(1)
+          bin = bin.add(remaining_partitions.first, false)
+          remaining_partitions = remaining_partitions.drop(1)
           break # move to next bin
 
         elsif remaining_partitions.first.sites.size > sites_for_bin # partition is bigger than free space available
           # Add partial partition to bin
-          bin.add!(remaining_partitions.first.crop(sites_for_bin), false)
-          remaining_partitions.first.drop_sites!(sites_for_bin)
+          bin = bin.add(remaining_partitions.first.crop(sites_for_bin), false)
+          remaining_partitions = remaining_partitions.replace(0, remaining_partitions.first.drop_sites(sites_for_bin)) #TODO: Check whether this works
           break # move to next bin
 
         else # partition is smaller than open space -> stay in current bin + reduce available space + drop partition
-          bin.add!(remaining_partitions.first, false)
+          bin = bin.add(remaining_partitions.first, false)
           sites_for_bin -= remaining_partitions.first.sites.size
-          remaining_partitions.drop!(1)
+          remaining_partitions = remaining_partitions.drop(1)
         end
 
       end
@@ -132,6 +133,11 @@ class BinArray
     end
   end
 
+  def to_csv(description)
+    # Iterate over all partitions and add up operations for this bin
+    self.each_with_index.map {|bin, bin_index| bin.to_csv({description: description, bin: bin_index}) }.flatten
+  end
+
   def each(&block)
     @list.each do |bin|
       if block_given?
@@ -156,9 +162,14 @@ class Bin
     @size = 0
   end
 
+  def add(partition, calculate_operations = true)
+    self.dup.add!(partition, calculate_operations)
+  end
+
   def add!(partition, calculate_operations = true)
     @list << partition
     @size = @list.map {|element| element.op_optimized}.reduce(:+) if calculate_operations
+    self
   end
 
   def free_space(bin_target_op_size)
@@ -167,6 +178,7 @@ class Bin
 
   def ml_operations!(tree)
     @size = @list.map {|partition| partition.ml_operations!(tree)}.reduce(:+)
+    self
   end
 
   def last
@@ -189,6 +201,10 @@ class Bin
         "[]"
       end
     end
+  end
+
+  def to_csv(hash)
+    self.map {|partition| partition.to_csv(hash)}
   end
 
   def each(&block)

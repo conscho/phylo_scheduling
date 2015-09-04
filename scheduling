@@ -31,9 +31,9 @@ class Scheduling < Thor
   option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
-  option :heuristic, :type => :numeric, :default => 0, :aliases => "-h",
-         :desc => "Which heuristic should be used: 0 = slicing based on sites; 1 = slicing based on operations. " \
-                  "Example: '-h 1' "
+  # option :heuristic, :type => :numeric, :default => 0, :aliases => "-h",
+  #        :desc => "Which heuristic should be used: 0 = slicing based on sites; 1 = slicing based on operations. " \
+  #                 "Example: '-h 1' "
   option :optimize, :type => :numeric, :default => 20, :aliases => "-o",
          :desc => "Whether the result should be optimized after generation. Enter the number of repeats. " \
                   "Example: '-o 20' "
@@ -47,7 +47,8 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_option = ["sites", "operations"]
+    heuristic_options = ["sites", "operations"]
+    csv_output = []
     start_time = Time.now
     partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
@@ -77,35 +78,69 @@ class Scheduling < Thor
     # Get partition sizes
     partitions.ml_operations!(tree)
 
-    # Initialize bin list
-    bins = BinArray.new(options[:number_of_bins])
-
-    # Set bin target size for sliding window heuristic
-    bins.set_bin_target_op_size!(partitions.op_optimized_size)
-    bins.set_bin_target_sites_size!(partitions.total_sites)
-
     # Sort partitions by op_optimized
     partitions.sort!
 
-    # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
-    remaining_partitions = bins.initial_fill(partitions)
-    puts "Remaining partitions: #{remaining_partitions}"
-    puts "Current bin distribution: #{bins}"
+    # Iterate over all heuristics
+    heuristic_options.each do |heuristic_option|
+
+      # Initialize bin list
+      bins = BinArray.new(options[:number_of_bins])
+
+      # Set bin target size for sliding window heuristic
+      bins.set_bin_target_op_size!(partitions.op_optimized_size)
+      bins.set_bin_target_sites_size!(partitions.total_sites)
 
 
-    ## Slicing heuristic
-    bins = bins.slice_fill(remaining_partitions, heuristic_option[options[:heuristic]])
-    bins.ml_operations!(tree)
-    puts "Current bin distribution: #{bins}"
-    puts "Current bin distribution: #{bins.to_s("fill_level")}"
+      # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
+      remaining_partitions = bins.initial_fill!(partitions)
+      # FIXME: Get a copy of bins and reduce actions in loop. I just can't get it to work.
 
-    # Simple Optimization
-    options[:optimize].times do
-      bins.slide_distribution!
+      ## Slicing heuristic
+      bins.slice_fill!(remaining_partitions, heuristic_option)
       bins.ml_operations!(tree)
-      puts "Current bin distribution: #{bins.to_s("fill_level")}"
+      puts "Bin distribution after heuristic #{heuristic_option}: #{bins}"
+      puts "Bin levels: #{bins.to_s("fill_level")}"
+      csv_output << bins.to_csv("heuristic_#{heuristic_option}")
+
+      # Simple Optimization
+      options[:optimize].times do
+        bins.slide_distribution!
+        bins.ml_operations!(tree)
+      end
+      puts "Bin distribution after optimization: #{bins}"
+      puts "Bin levels: #{bins.to_s("fill_level")}"
+      csv_output << bins.to_csv("heuristic_#{heuristic_option[0]}_optimized")
+
     end
-    puts "Current bin distribution: #{bins}"
+
+
+
+    program_runtime = (Time.now - start_time).duration
+
+    # Check if output folder exists
+    output_directory = "./output_#{File.basename(__FILE__, ".rb")}"
+    FileUtils.mkdir_p(output_directory)
+
+    # Output results to CSV for R
+    data_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} data.csv"
+    puts "Writing data to #{data_file}"
+    csv_output.flatten.array_of_hashes_to_csv_file(data_file)
+
+
+    # Output parameters to CSV for R
+    program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root,
+                                  number_of_processes: options[:number_of_processes],
+                                  program_runtime: program_runtime, data_file: data_file,
+                                  graph_file_name: graph_file_name,
+                                  number_of_bins: options[:number_of_bins], optimize_result: options[:optimize]}
+
+    parameter_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
+    program_parameters_output.to_csv_file(parameter_file)
+    puts "Program parameters written to #{parameter_file}"
+    puts "Run corresponding R script '#{File.basename(__FILE__, ".rb")}.R' to generate graphs"
+
+    puts "Program finished at #{Time.now}. Runtime: #{program_runtime}"
 
 
   end
