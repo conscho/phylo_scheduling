@@ -28,11 +28,17 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-n",
+  option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
-  option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
-         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
+  option :heuristic, :type => :numeric, :default => 0, :aliases => "-h",
+         :desc => "Which heuristic should be used: 0 = slicing based on sites; 1 = slicing based on operations. " \
+                  "Example: '-h 1' "
+  option :optimize, :type => :numeric, :default => 20, :aliases => "-o",
+         :desc => "Whether the result should be optimized after generation. Enter the number of repeats. " \
+                  "Example: '-o 20' "
+  option :number_of_processes, :type => :numeric, :default => 0, :aliases => "-P",
+         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. [Not implemented]" \
                   "Example: '-P 2' "
 
   def generate
@@ -41,6 +47,7 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
+    heuristic_option = ["sites", "operations"]
     start_time = Time.now
     partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
@@ -86,20 +93,19 @@ class Scheduling < Thor
     puts "Current bin distribution: #{bins}"
 
 
-
-    ## Sliding Window
-    option = ["operations", "sites"]   # TODO: User Input
-    bins = bins.slice_fill(remaining_partitions, option[1])
+    ## Slicing heuristic
+    bins = bins.slice_fill(remaining_partitions, heuristic_option[options[:heuristic]])
     bins.ml_operations!(tree)
+    puts "Current bin distribution: #{bins}"
     puts "Current bin distribution: #{bins.to_s("fill_level")}"
 
     # Simple Optimization
-    20.times do
+    options[:optimize].times do
       bins.slide_distribution!
       bins.ml_operations!(tree)
       puts "Current bin distribution: #{bins.to_s("fill_level")}"
     end
-
+    puts "Current bin distribution: #{bins}"
 
 
   end

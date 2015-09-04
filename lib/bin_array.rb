@@ -39,8 +39,8 @@ class BinArray
     total_sites_remaining = remaining_partitions.total_sites
     total_free_space = self.total_free_space
 
-    # Fill each bin
-    self.each do |bin|
+    # Fill each bin starting with the least filled
+    self.sort.each do |bin|
 
       # How many sites need to go into the current bin
       if option == "operations"
