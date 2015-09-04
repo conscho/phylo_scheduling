@@ -155,7 +155,7 @@ class Partition
   end
 
   def to_csv(hash)
-    hash.merge({sites: @sites.size, partition: @name, operations: @op_optimized})
+    hash.merge({sites: @sites.size, partition: @name, op_optimized: @op_optimized, op_maximum: @op_maximum})
   end
 
   def size

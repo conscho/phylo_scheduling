@@ -81,7 +81,7 @@ class Scheduling < Thor
     # Sort partitions by op_optimized
     partitions.sort!
 
-    # Iterate over all heuristics
+    # Iterate over heuristics
     heuristic_options.each do |heuristic_option|
 
       # Initialize bin list
@@ -110,7 +110,7 @@ class Scheduling < Thor
       end
       puts "Bin distribution after optimization: #{bins}"
       puts "Bin levels: #{bins.to_s("fill_level")}"
-      csv_output << bins.to_csv("heuristic_#{heuristic_option[0]}_optimized")
+      csv_output << bins.to_csv("heuristic_#{heuristic_option}_optimized")
 
     end
 
@@ -129,11 +129,12 @@ class Scheduling < Thor
 
 
     # Output parameters to CSV for R
-    program_parameters_output = { phylip_file: phylip_file, sample_root: sample_root,
+    program_parameters_output = { number_of_bins: options[:number_of_bins], optimize_result: options[:optimize],
+                                  phylip_file: phylip_file, sample_root: sample_root,
                                   number_of_processes: options[:number_of_processes],
                                   program_runtime: program_runtime, data_file: data_file,
                                   graph_file_name: graph_file_name,
-                                  number_of_bins: options[:number_of_bins], optimize_result: options[:optimize]}
+                                  }
 
     parameter_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
     program_parameters_output.to_csv_file(parameter_file)
