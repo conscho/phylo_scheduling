@@ -29,7 +29,7 @@ class SiteDependencies < Thor
   option :choose_partition, :type => :numeric, :default => 0, :aliases => "-c",
          :desc => "Choose which partition should be plotted. " \
                   "Example: '-c 3' "
-  option :crop_sites, :type => :numeric, :default => 20, :aliases => "-r",
+  option :crop_sites, :type => :numeric, :default => 10, :aliases => "-r",
          :desc => "Crop partiton to x sites. " \
                   "Example: '-r 30' "
 
@@ -70,10 +70,9 @@ class SiteDependencies < Thor
     partition = partitions.list[options[:choose_partition]]
     puts "Using partition named '#{partition.name}'"
     # Crop sites
-    partition_sites = (partition.sites.first ... partition.sites.first + options[:crop_sites]) if options[:crop_sites] < partition.sites.size
+    partition = partition.crop(options[:crop_sites]) if options[:crop_sites] < partition.sites.size
 
-    result = tree.ml_operations(partition_sites)
-
+    tree.ml_operations(partition.sites)
     site_dependencies_data = tree.get_site_dependencies
 
     # Edges for the site dependency graph
@@ -100,7 +99,7 @@ class SiteDependencies < Thor
     program_parameters_output = {tree_file: options[:tree_file],
                                  number_of_taxa: number_of_taxa, number_of_sites: number_of_sites,
                                  partition_name: partition.name,
-                                 crop_sites: partition_sites.size,
+                                 crop_sites: partition.sites.size,
                                  program_runtime: program_runtime, data_file: data_file,
                                  graph_file_name: graph_file_name}
 

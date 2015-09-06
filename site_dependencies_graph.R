@@ -24,11 +24,12 @@ for (parameter.file in files) {
   
   # Get graph
   g <- graph_from_data_frame(edgesData, directed = FALSE)
+  coords <- layout_with_kk(g, weights=(1 - (E(g)$weight/(max(E(g)$weight) + 1)) ))
   
   # Plot graph
   pdf(file=paste(graphFileName, " site dependencies graph", ".pdf" , sep = ""), w=10, h=7)
-  plot(g, edge.width=E(g)$weight/max(E(g)$weight)*2)
-  title(main="Dependency graph: Which sites have dependencies? the bigger the vertex the more dependencies")
+  plot(g, layout=coords, vertex.label = paste(V(g), ":", length(incident(g, V(g))), sep = "") )
+  title(main="Dependency graph: Which sites have dependencies? \nNodes label = 'site_name':'number_of_dependencies'. Edge length = relative weight")
   title(sub=parametersTitle)
   dev.off()
   
