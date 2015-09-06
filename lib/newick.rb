@@ -144,6 +144,7 @@ class NewickNode
     end
   end
 
+  # For all node: Get the subtree site patterns and the sites that form each pattern
   def dependencies_per_subtree
     collect_dependencies = []
     descendants.each do |node|
@@ -210,6 +211,19 @@ class NewickNode
       taxa.push(name)
     end
     return taxa.sort
+  end
+
+  # return hash of names and nucleotides of leaves (taxa) that are contained in the node
+  def taxa_with_nucleotides
+    taxa = {}
+    if (!leaf?)
+      @children.each do |child|
+        taxa = taxa.merge(child.taxa_with_nucleotides)
+      end
+    else
+      taxa = {@name => @nucleotides}
+    end
+    return taxa
   end
 
   # returns array of leaves (taxa) are contained in the node
@@ -608,6 +622,11 @@ class NewickTree
   # return array of all taxa in tree
   def taxa
     return @root.taxa
+  end
+
+  # return hash of taxa name and nucleotides in tree
+  def taxa_with_nucleotides
+    return @root.taxa_with_nucleotides
   end
 
   # return number of nodes to most distant leaf

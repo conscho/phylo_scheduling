@@ -28,7 +28,7 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-n",
+  option :number_of_bins, :type => :numeric, :default => 6, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
   # option :heuristic, :type => :numeric, :default => 0, :aliases => "-h",
@@ -48,6 +48,7 @@ class Scheduling < Thor
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
     heuristic_options = ["sites", "operations"]
+    sort_options = ["std", "lexi"]
     csv_output = []
     start_time = Time.now
     partitions = PartitionArray.from_file(partition_file)
@@ -81,38 +82,70 @@ class Scheduling < Thor
     # Sort partitions by op_optimized
     partitions.sort!
 
-    # Iterate over heuristics
-    heuristic_options.each do |heuristic_option|
-
-      # Initialize bin list
-      bins = BinArray.new(options[:number_of_bins])
-
-      # Set bin target size for sliding window heuristic
-      bins.set_bin_target_op_size!(partitions.op_optimized_size)
-      bins.set_bin_target_sites_size!(partitions.total_sites)
 
 
-      # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
-      remaining_partitions = bins.initial_fill!(partitions)
-      # FIXME: Get a copy of bins and reduce actions in loop. I just can't get it to work.
 
-      ## Slicing heuristic
-      bins.slice_fill!(remaining_partitions, heuristic_option)
-      bins.ml_operations!(tree)
-      puts "Bin distribution after heuristic #{heuristic_option}: #{bins}"
-      puts "Bin levels: #{bins.to_s("fill_level")}"
-      csv_output << bins.to_csv("heuristic_#{heuristic_option}")
+    sort_options.each do |sort_option|
 
-      # Simple Optimization
-      options[:optimize].times do
-        bins.slide_distribution!
-        bins.ml_operations!(tree)
+      if sort_option == "lexi"
+
+        # Get taxa sorted via tree traversal
+        taxa = tree.taxa_with_nucleotides
+
+        # Lexicographic sort sites per partition
+        all_sites = taxa.values.map {|nucleotides| nucleotides.split('') }.transpose
+        partitions.each do |partition|
+          all_sites[(partition.sites.first .. partition.sites.last)] = all_sites[(partition.sites.first .. partition.sites.last)].sort
+        end
+
+        phylip_data = Hash[taxa.keys.zip(all_sites.transpose)]
+
+        # Save in tree
+        tree = tree.add_dna_sequences(phylip_data)
+
       end
-      puts "Bin distribution after optimization: #{bins}"
-      puts "Bin levels: #{bins.to_s("fill_level")}"
-      csv_output << bins.to_csv("heuristic_#{heuristic_option}_optimized")
+
+
+      # Iterate over heuristics
+      heuristic_options.each do |heuristic_option|
+
+        # Initialize bin list
+        bins = BinArray.new(options[:number_of_bins])
+
+        # Set bin target size for sliding window heuristic
+        bins.set_bin_target_op_size!(partitions.op_optimized_size)
+        bins.set_bin_target_sites_size!(partitions.total_sites)
+
+
+        # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
+        remaining_partitions = bins.initial_fill!(partitions)
+
+        # FIXME: Get a copy of bins and move actions above this line outside of loop. I just can't get it to work.
+
+        ## Slicing heuristic
+        bins.slice_fill!(remaining_partitions, heuristic_option)
+        bins.ml_operations!(tree)
+        puts "Bin distribution after heuristic #{heuristic_option}: #{bins}"
+        puts "Bin levels: #{bins.to_s("fill_level")}"
+        csv_output << bins.to_csv("#{heuristic_option}_#{sort_option}")
+
+        # Simple Optimization
+        options[:optimize].times do
+          bins.slide_distribution!
+          bins.ml_operations!(tree)
+        end
+        puts "Bin distribution after optimization: #{bins}"
+        puts "Bin levels: #{bins.to_s("fill_level")}"
+        csv_output << bins.to_csv("#{heuristic_option}_#{sort_option}_optimized")
+
+      end
 
     end
+
+
+
+
+
 
 
 
@@ -134,7 +167,7 @@ class Scheduling < Thor
                                   number_of_processes: options[:number_of_processes],
                                   program_runtime: program_runtime, data_file: data_file,
                                   graph_file_name: graph_file_name,
-                                  }
+    }
 
     parameter_file = "#{output_directory}/#{start_time.strftime "%Y-%m-%d %H-%M-%S"} parameters.csv"
     program_parameters_output.to_csv_file(parameter_file)

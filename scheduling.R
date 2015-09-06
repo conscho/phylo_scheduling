@@ -5,6 +5,7 @@ library(plyr)
 library(gridExtra)
 
 
+
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
@@ -40,8 +41,15 @@ for (parameter.file in files) {
   combData = rbind(rawData, rawData2)
   
   # Generate graphs
-  ggplotTitle = ggtitle(paste("Barchart: Partition distribution to bins\n", parametersTitle))
-  gp = ggplot(combData, aes(x=bin)) + scale_x_discrete() + geom_bar(aes(x=bin, y=operations_sites, fill=partition), stat="identity", colour="black") + geom_text(aes(label=operations_sites, bin, operations_sites), position="stack", vjust = +1, size=3) + geom_text(aes(0, operations_sites, label=paste("operations: ", operations_sites, "\n", "savings: ", savings, "%", sep=""), group=NULL), data=sumData, vjust=+0.5, hjust=0, color = "red", size=4) + facet_grid(type~description, scales = "free_y") + ggplotTheme + ggplotTitle + ggplotRotateLabel
+  ggplotTitle = ggtitle(paste("Barchart scheduling: Partition distribution to bins for various heuristics\n", parametersTitle))
+  gp = ggplot(combData, aes(x=bin, ymax=operations_sites)) + 
+    scale_x_discrete(limit = 0:max(combData$bin)) + 
+    geom_blank(aes(y=operations_sites*1.1), position = "stack") + ylab("") + ## Dirty hack to increase upper boundary of y-axis 
+    geom_bar(aes(x=bin, y=operations_sites, fill=partition), stat="identity", colour="black") + 
+    geom_text(aes(label=operations_sites, bin, operations_sites), position="stack", vjust = +1, size=3) + 
+    geom_text(aes(0, operations_sites, label=paste("operations: ", operations_sites, "\n", "savings: ", savings, "%", sep=""), group=NULL), data=sumData, vjust=-0.3, hjust=0.1/max(combData$bin), color = "red", size=4) + 
+    facet_grid(type~description, scales = "free_y") + 
+    ggplotTheme + ggplotTitle + ggplotRotateLabel
   ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=14, h=10)
   
 }
