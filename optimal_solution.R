@@ -31,7 +31,12 @@ for (parameter.file in files) {
   
   # Generate graphs
   ggplotTitle = ggtitle(paste("Barchart: Site distribution to bins with operations\n", parametersTitle))
-  gp = ggplot(combData, aes(x=bin, fill=partition)) + scale_x_discrete() + ggplotRotateLabel + geom_bar(aes(x=bin, y=operations), stat="identity", colour="black") + geom_text(aes(label=operations, bin, operations), position="stack", vjust = +1) + facet_grid(type~solution, scales = "free_y") + ggplotTheme + ggplotTitle
+  gp = ggplot(combData, aes(x=bin, ymax=operations, fill=partition)) + 
+    scale_x_discrete(limit = 0:max(combData$bin)) + 
+    geom_bar(aes(x=bin, y=operations), stat="identity", colour="black") + 
+    geom_text(aes(label=operations, bin, operations), position="stack", vjust = +1) + 
+    facet_grid(type~solution, scales = "free_y") + 
+    ggplotRotateLabel + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " groundtruth", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
 }

@@ -141,7 +141,7 @@ class Partition
     @sites = @sites.unshift(site)
   end
 
-  # Return new partition containing of sites
+  # Return new partition containing only {number} sites
   def crop(number)
     Partition.new(@name, @sites.first(number))
   end
