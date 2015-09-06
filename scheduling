@@ -47,104 +47,110 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ["sites", "operations"]
+    heuristic_options = ["greedy", "slice"]
+    slice_options = ["sites", "operations"]
     sort_options = ["std", "lexi"]
     csv_output = []
     start_time = Time.now
-    partitions = PartitionArray.from_file(partition_file)
+    partitions_master = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
     # Drop identical sites
     unless partition_file.include?("uniq")
-      number_of_sites, partitions, phylip_data, partition_file, phylip_file =
-          drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
+      number_of_sites, partitions_master, phylip_data, partition_file, phylip_file =
+          drop_unique_sites(partitions_master, phylip_data, partition_file, phylip_file, number_of_taxa)
     end
 
     puts "Program started at #{start_time}"
-    puts "Using parameters: Tree file: #{options[:tree_file]}; " \
+    puts "Using parameters: tree_file: #{options[:tree_file]}; " \
          "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
          "Sample root nodes: #{sample_root}; " \
          "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
-         "Number of partitions: #{partitions.size}"
+         "Number of partitions: #{partitions_master.size}"
 
 
     # Get data
-    tree = NewickTree.fromFile(options[:tree_file])
-    tree = tree.add_dna_sequences(phylip_data)
+    tree_master = NewickTree.fromFile(options[:tree_file])
+    tree_master = tree_master.add_dna_sequences(phylip_data)
 
     # Midpoint root
-    tree = tree.set_edge_length.midpoint_root
+    tree_master = tree_master.set_edge_length.midpoint_root
 
     # Get partition sizes
-    partitions.ml_operations!(tree)
+    partitions_master.ml_operations!(tree_master)
 
     # Sort partitions by op_optimized
-    partitions.sort!
+    partitions_master.sort!
+
+    # Initialize bin list
+    bins_master = BinArray.new(options[:number_of_bins])
+
+    # Set bin target size for sliding window heuristic
+    bins_master.set_bin_target_op_size!(partitions_master.op_optimized_size)
+    bins_master.set_bin_target_sites_size!(partitions_master.total_sites)
+
+    # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
+    remaining_partitions_master = bins_master.initial_fill!(partitions_master)
 
 
+    heuristic_options.each do |heuristic|
 
+      # Get clean data
+      bins = Marshal.load(Marshal.dump(bins_master))
+      partitions = Marshal.load(Marshal.dump(partitions_master))
+      remaining_partitions = Marshal.load(Marshal.dump(remaining_partitions_master))
+      tree = Marshal.load(Marshal.dump(tree_master))
 
-    sort_options.each do |sort_option|
-
-      if sort_option == "lexi"
-
-        # Get taxa sorted via tree traversal
-        taxa = tree.taxa_with_nucleotides
-
-        # Lexicographic sort sites per partition
-        all_sites = taxa.values.map {|nucleotides| nucleotides.split('') }.transpose
-        partitions.each do |partition|
-          all_sites[(partition.sites.first .. partition.sites.last)] = all_sites[(partition.sites.first .. partition.sites.last)].sort
-        end
-
-        phylip_data = Hash[taxa.keys.zip(all_sites.transpose)]
-
-        # Save in tree
-        tree = tree.add_dna_sequences(phylip_data)
-
-      end
-
-
-      # Iterate over heuristics
-      heuristic_options.each do |heuristic_option|
-
-        # Initialize bin list
-        bins = BinArray.new(options[:number_of_bins])
-
-        # Set bin target size for sliding window heuristic
-        bins.set_bin_target_op_size!(partitions.op_optimized_size)
-        bins.set_bin_target_sites_size!(partitions.total_sites)
-
-
-        # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
-        remaining_partitions = bins.initial_fill!(partitions)
-
-        # FIXME: Get a copy of bins and move actions above this line outside of loop. I just can't get it to work.
-
-        ## Slicing heuristic
-        bins.slice_fill!(remaining_partitions, heuristic_option)
+      if heuristic == "greedy"
+        bins.greedy_initial_fill!(remaining_partitions, tree, "operations")
+        bins.greedy_fill!(remaining_partitions)
         bins.ml_operations!(tree)
-        puts "Bin distribution after heuristic #{heuristic_option}: #{bins}"
-        puts "Bin levels: #{bins.to_s("fill_level")}"
-        csv_output << bins.to_csv("#{heuristic_option}_#{sort_option}")
 
-        # Simple Optimization
-        options[:optimize].times do
-          bins.slide_distribution!
-          bins.ml_operations!(tree)
+        csv_output << optimize_and_output(bins, heuristic, tree)
+
+      elsif heuristic == "slice"
+
+        sort_options.each do |sort|
+
+          if sort == "lexi"
+
+            # Get taxa sorted via tree traversal
+            taxa = tree.taxa_with_nucleotides
+
+            # Lexicographic sort sites per partition
+            all_sites = taxa.values.map {|nucleotides| nucleotides.split('') }.transpose
+            partitions.each do |partition|
+              all_sites[(partition.sites.first .. partition.sites.last)] = all_sites[(partition.sites.first .. partition.sites.last)].sort
+            end
+
+            phylip_data = Hash[taxa.keys.zip(all_sites.transpose)]
+
+            # Save in tree
+            tree = tree.add_dna_sequences(phylip_data)
+
+          end
+
+          # Iterate over slicing options
+          slice_options.each do |slice|
+
+            # Get clean data
+            bins = Marshal.load( Marshal.dump(bins_master))
+            partitions = Marshal.load(Marshal.dump(partitions_master))
+            remaining_partitions = Marshal.load(Marshal.dump(remaining_partitions_master))
+
+            bins.slice_fill!(remaining_partitions, slice)
+            bins.ml_operations!(tree)
+
+            csv_output << optimize_and_output(bins, "#{slice}_#{sort}", tree)
+
+          end
+
         end
-        puts "Bin distribution after optimization: #{bins}"
-        puts "Bin levels: #{bins.to_s("fill_level")}"
-        csv_output << bins.to_csv("#{heuristic_option}_#{sort_option}_optimized")
 
       end
 
     end
-
-
-
-
 
 
 
@@ -178,6 +184,8 @@ class Scheduling < Thor
 
 
   end
+
+
 
 end
 

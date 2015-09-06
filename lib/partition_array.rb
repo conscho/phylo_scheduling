@@ -39,6 +39,11 @@ class PartitionArray
     @list.map {|partition| partition.sites.size}.reduce(:+)
   end
 
+  # Returns an array of hashes with site => partition_name of all containing partitions
+  def sites
+    @list.map {|partition| partition.sites.each_with_object(partition.name).map {|site, partition_name| {site => partition_name} }}.flatten(1)
+  end
+
   def empty?
     @list.empty?
   end
@@ -97,13 +102,18 @@ class Partition
 
   attr_reader :name
   attr_reader :sites
+  attr_reader :tree
   attr_reader :op_maximum
   attr_reader :op_optimized
   attr_reader :op_savings
 
-  def initialize(name, sites)
+  def initialize(name, sites, tree = nil)
     @name = name
     @sites = sites
+    if tree != nil
+      @tree = Marshal.load( Marshal.dump(tree) )
+      self.ml_operations!(@tree)
+    end
   end
 
   def ml_operations!(tree)
@@ -113,6 +123,19 @@ class Partition
     @op_savings = result[:op_savings]
 
     @op_optimized
+  end
+
+  def incr_add_site(site, simulate = false)
+    result = @tree.ml_operations([site], false, simulate)
+    unless simulate
+      @sites << site
+    end
+    result[:op_optimized]
+  end
+
+  def drop_site!(site)
+    @sites.delete(site)
+    self
   end
 
   # Drop sites in the beginning of partition

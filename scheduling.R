@@ -50,7 +50,7 @@ for (parameter.file in files) {
     geom_text(aes(0, operations_sites, label=paste("operations: ", operations_sites, "\n", "savings: ", savings, "%", sep=""), group=NULL), data=sumData, vjust=-0.3, hjust=0.1/max(combData$bin), color = "red", size=4) + 
     facet_grid(type~description, scales = "free_y") + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=14, h=10)
+  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=20, h=10)
   
 }
 

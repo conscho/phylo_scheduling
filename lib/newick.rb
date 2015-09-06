@@ -103,7 +103,7 @@ class NewickNode
     @children = []
   end
 
-  def tree_traversal_and_operations_count(site_number)  # with and without SR (subtree repeats)
+  def tree_traversal_and_operations_count(site_number, simulate = false)  # with and without SR (subtree repeats)
     subtree_string = ''
     count_of_children = 1 # 1 calculcation if leaf_leaf
     count_of_grandchildren_SR = 0 # initializing variable. Considering subtree repeats.
@@ -114,7 +114,7 @@ class NewickNode
         subtree_string += child.nucleotides[site_number]
       else
         count_of_children = count_of_children * 4 # 4 calculations if inner_leaf and 16 if inner_inner
-        result = child.tree_traversal_and_operations_count(site_number)
+        result = child.tree_traversal_and_operations_count(site_number, simulate)
         count_of_grandchildren += result[:op_maximum]
         count_of_grandchildren_SR += result[:op_optimized]
         subtree_string += result[:subtree_string]
@@ -123,10 +123,10 @@ class NewickNode
 
     # Count of operations with SR optimization & add calculated subtree (= equivalence classes)
     op_optimized = if @calculated_subtrees.has_key?(subtree_string)
-                 @calculated_subtrees[subtree_string] << site_number
+                 @calculated_subtrees[subtree_string] << site_number unless simulate
                  0
                else
-                 @calculated_subtrees[subtree_string] = [site_number]
+                 @calculated_subtrees[subtree_string] = [site_number] unless simulate
                  count_of_children + count_of_grandchildren_SR
                end
 
@@ -511,13 +511,13 @@ class NewickTree
 
 
   # how many ML operations for specific partition_sites
-  def ml_operations(partition_sites, new_partition = true)
+  def ml_operations(partition_sites, new_partition = true, simulate = false)
     @root.clear_calculated_subtrees if new_partition # clear previous values
 
     op_maximum = 0 # count of calculations for each site without skipping SR (= subtree repeats)
     op_optimized = 0 # count of calculations for each site with skipping SR (= subtree repeats)
     partition_sites.each do |site|
-      result = @root.tree_traversal_and_operations_count(site)
+      result = @root.tree_traversal_and_operations_count(site, simulate)
       op_maximum += result[:op_maximum]
       op_optimized += result[:op_optimized]
     end
