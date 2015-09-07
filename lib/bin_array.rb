@@ -200,7 +200,7 @@ class BinArray
 
   def to_csv(description)
     # Iterate over all partitions and add up operations for this bin
-    self.each_with_index.map {|bin, bin_index| bin.to_csv({description: description, bin: bin_index}) }.flatten
+    self.each_with_index.map {|bin, bin_index| bin.to_csv({description: description, bin: bin_index, optimum: @bin_target_op_size}) }.flatten
   end
 
   def each(&block)
