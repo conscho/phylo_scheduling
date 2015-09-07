@@ -129,6 +129,9 @@ class Partition
     result = @tree.ml_operations([site], false, simulate)
     unless simulate
       @sites << site
+      @op_maximum += result[:op_maximum]
+      @op_optimized += result[:op_optimized]
+      @op_savings = ((@op_maximum.to_f - @op_optimized.to_f) / @op_maximum.to_f * 100)
     end
     result[:op_optimized]
   end

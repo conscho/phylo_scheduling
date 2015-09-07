@@ -28,12 +28,9 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 6, :aliases => "-n",
+  option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
-  # option :heuristic, :type => :numeric, :default => 0, :aliases => "-h",
-  #        :desc => "Which heuristic should be used: 0 = slicing based on sites; 1 = slicing based on operations. " \
-  #                 "Example: '-h 1' "
   option :optimize, :type => :numeric, :default => 20, :aliases => "-o",
          :desc => "Whether the result should be optimized after generation. Enter the number of repeats. " \
                   "Example: '-o 20' "
@@ -105,7 +102,7 @@ class Scheduling < Thor
       if heuristic == "greedy"
         bins.greedy_initial_fill!(remaining_partitions, tree, "operations")
         bins.greedy_fill!(remaining_partitions)
-        bins.ml_operations!(tree)
+        bins.ml_operations!(tree) # FIXME: Clean up functions then this command will be unnecessary
 
         csv_output << optimize_and_output(bins, heuristic, tree)
 

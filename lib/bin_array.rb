@@ -84,7 +84,10 @@ class BinArray
           bin.each do |target_partition|
             if target_partition.name == src_partition.name
               # Simulate insert of site into bin
-              simulation_result.merge!({target_partition.incr_add_site(site, true) => target_partition})
+              operations = target_partition.incr_add_site(site, true)
+              bin = bin.ml_operations!(nil, false)
+              operations = operations * 10 + 100 if bin.size > @bin_target_op_size
+              simulation_result.merge!({operations => target_partition})
             end
           end
         end
@@ -238,8 +241,12 @@ class Bin
     bin_target_op_size - @size
   end
 
-  def ml_operations!(tree)
-    @size = @list.map {|partition| partition.ml_operations!(tree)}.reduce(:+)
+  def ml_operations!(tree, compute = true)
+    if compute
+      @size = @list.map {|partition| partition.ml_operations!(tree)}.reduce(:+)
+    else
+      @size = @list.map {|partition| partition.op_optimized}.reduce(:+)
+    end
     self
   end
 
