@@ -1,5 +1,6 @@
-PATH
-  remote: /Users/constantin/Coding/Repos/Newick-ruby
+GIT
+  remote: git://github.com/conscho/Newick-ruby
+  revision: 61d3834941f4f42b71b220b883b6d4263e63fe27
   specs:
     newick-ruby (1.0.4)
       fpdf (>= 1.5.3)
@@ -24,3 +25,6 @@ DEPENDENCIES
   ruby-progressbar
   stackprof
   thor
+
+BUNDLED WITH
+   1.10.6

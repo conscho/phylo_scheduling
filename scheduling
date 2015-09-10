@@ -23,7 +23,7 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-n",
+  option :number_of_bins, :type => :numeric, :default => 2, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
   option :number_of_processes, :type => :numeric, :default => 0, :aliases => "-P",
@@ -138,7 +138,7 @@ class Scheduling < Thor
 
 
     # Output parameters to CSV for R
-    program_parameters_output = { number_of_bins: options[:number_of_bins], optimize_result: options[:optimize],
+    program_parameters_output = { number_of_bins: options[:number_of_bins],
                                   phylip_file: phylip_file, sample_root: sample_root,
                                   number_of_processes: options[:number_of_processes],
                                   program_runtime: program_runtime, data_file: data_file,
