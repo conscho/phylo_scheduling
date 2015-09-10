@@ -105,22 +105,8 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
 end
 
 
-def optimize_and_output(bins, output, tree)
-
-  csv_output = []
-
-  puts "Bin distribution after #{output}: #{bins}"
-  puts "Bin levels: #{bins.to_s("fill_level")}"
-  csv_output << bins.to_csv(output)
-
-  # Simple Optimization
-  options[:optimize].times do
-    bins.slide_distribution!
-    bins.ml_operations!(tree)
-  end
-  puts "Bin distribution after optimization: #{bins}"
-  puts "Bin levels: #{bins.to_s("fill_level")}"
-  csv_output << bins.to_csv("#{output}_optim")
-
-  csv_output
+def deep_clone(bins, partitions, tree)
+  return [Marshal.load(Marshal.dump(bins)),
+          Marshal.load(Marshal.dump(partitions)),
+          Marshal.load(Marshal.dump(tree))]
 end

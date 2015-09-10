@@ -7,7 +7,6 @@ require 'fileutils'
 require 'ruby-progressbar'
 
 require './lib/helper'
-require './lib/newick'
 require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
@@ -72,12 +71,12 @@ class SiteDependencies < Thor
         tree = tree.add_dna_sequences(phylip_data)
 
         # Midpoint root
-        tree = tree.set_edge_length.midpoint_root
+        tree = tree.set_edge_length!.midpointRoot
 
         # Iterate over all partitions
         partitions.each do |partition|
 
-          result = tree.ml_operations(partition.sites)
+          result = tree.ml_operations!(partition.sites)
 
           site_dependencies_data = tree.get_site_dependencies
 

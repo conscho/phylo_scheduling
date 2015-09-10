@@ -103,7 +103,7 @@ class Statistics < Thor
         if options[:sample_root] == "all"
           root_nodes = tree.nodes
         elsif options[:sample_root] == "midpoint"
-          tree = tree.set_edge_length.midpoint_root
+          tree = tree.set_edge_length!.midpointRoot
           root_nodes[0] = tree.root
         else
           root_nodes = tree.nodes.first(options[:sample_root])
@@ -124,8 +124,8 @@ class Statistics < Thor
               # Split in the middle of each partition
               split_at = partition.sites.size / 2
 
-              result_until_split = tree.ml_operations(partition.sites.first .. (partition.sites.first + split_at))
-              result_after_split = tree.ml_operations((partition.sites.first + split_at + 1) .. partition.sites.last)
+              result_until_split = tree.ml_operations!(partition.sites.first .. (partition.sites.first + split_at))
+              result_after_split = tree.ml_operations!((partition.sites.first + split_at + 1) .. partition.sites.last)
 
               tree_output << { batch: batch_name, tree: file, likelihood: likelihood,
                                root_node: root_index.to_s, height: height, partition: partition.name,
@@ -138,7 +138,7 @@ class Statistics < Thor
 
             end
 
-            result = tree.ml_operations(partition.sites)
+            result = tree.ml_operations!(partition.sites)
 
             tree_output << { batch: batch_name, tree: file, likelihood: likelihood,
                              root_node: root_index.to_s, height: height, partition: partition.name,

@@ -84,7 +84,7 @@ class OptimalSolution < Thor
     tree = tree.add_dna_sequences(phylip_data)
 
     # Midpoint root
-    tree = tree.set_edge_length.midpoint_root
+    tree = tree.set_edge_length!.midpointRoot
 
     # Test each distribution and save best distribution
     results = Parallel.map(distributions, :in_processes => options[:number_of_processes], :progress => "Checking all distributions") do |distribution|
@@ -101,7 +101,7 @@ class OptimalSolution < Thor
 
         # Iterate over all partitions and add up operations for this bin
         distribution[bin_index].each do |partition_name, partition_range|
-          result = tree.ml_operations(partition_range)
+          result = tree.ml_operations!(partition_range)
           bin_operations_maximum += result[:op_maximum]
           bin_operations_optimized += result[:op_optimized]
         end
@@ -133,7 +133,7 @@ class OptimalSolution < Thor
         partition_sites.each do |site|
           csv_output << {solution: "best", bin: bin_index,
                          site: site, partition: partition_name,
-                         operations: tree.ml_operations([site], false)[:op_optimized]}
+                         operations: tree.ml_operations!([site], false)[:op_optimized]}
         end
       end
     end
@@ -161,7 +161,7 @@ class OptimalSolution < Thor
         partition_sites.each do |site|
           csv_output << {solution: "simple", bin: bin_index,
                          site: site, partition: partition_name,
-                         operations: tree.ml_operations([site], false)[:op_optimized]}
+                         operations: tree.ml_operations!([site], false)[:op_optimized]}
         end
       end
     end

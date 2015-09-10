@@ -6,15 +6,10 @@ require 'parallel'
 require 'fileutils'
 require 'pp'
 require 'ruby-progressbar'
+require 'Newick'
+require 'require_all'
 
-require './lib/helper'
-require './lib/newick'
-require './lib/multi_io'
-require './lib/numeric'
-require './lib/array'
-require './lib/hash'
-require './lib/bin_array'
-require './lib/partition_array'
+require_all 'lib'
 
 
 class Scheduling < Thor
@@ -31,9 +26,6 @@ class Scheduling < Thor
   option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
-  option :optimize, :type => :numeric, :default => 20, :aliases => "-o",
-         :desc => "Whether the result should be optimized after generation. Enter the number of repeats. " \
-                  "Example: '-o 20' "
   option :number_of_processes, :type => :numeric, :default => 0, :aliases => "-P",
          :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. [Not implemented]" \
                   "Example: '-P 2' "
@@ -45,8 +37,8 @@ class Scheduling < Thor
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
     heuristic_options = ["greedy", "slice"]
-    slice_options = ["sites", "operations"]
-    sort_options = ["std", "lexi"]
+    optimization_options = []
+    #optimization_options = ["min_max_shift", "reduce_max", "bad_sites"]
     csv_output = []
     start_time = Time.now
     partitions_master = PartitionArray.from_file(partition_file)
@@ -72,84 +64,65 @@ class Scheduling < Thor
     tree_master = tree_master.add_dna_sequences(phylip_data)
 
     # Midpoint root
-    tree_master = tree_master.set_edge_length.midpoint_root
+    tree_master.set_edge_length!.midpointRoot
 
-    # Get partition sizes
-    partitions_master.ml_operations!(tree_master)
-
-    # Sort partitions by op_optimized
-    partitions_master.sort!
+    # Get partition sizes and sort by operations
+    partitions_master.add_tree!(tree_master).sort!
 
     # Initialize bin list
     bins_master = BinArray.new(options[:number_of_bins])
 
-    # Set bin target size for sliding window heuristic
-    bins_master.set_bin_target_op_size!(partitions_master.op_optimized_size)
-    bins_master.set_bin_target_sites_size!(partitions_master.total_sites)
-
-    # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
-    remaining_partitions_master = bins_master.initial_fill!(partitions_master)
+    # Set lower bound for heuristics
+    bins_master.set_lower_bound!(partitions_master)
 
 
+    ## Original scheduling as reference ##
+    # Get clean data
+    bins, partitions, tree =
+        deep_clone(bins_master, partitions_master, tree_master)
+
+    bins.original_scheduling!(partitions)
+    csv_output << bins.to_csv("original_scheduling")
+
+
+    # Standard sorting of sites
     heuristic_options.each do |heuristic|
-
       # Get clean data
-      bins = Marshal.load(Marshal.dump(bins_master))
-      partitions = Marshal.load(Marshal.dump(partitions_master))
-      remaining_partitions = Marshal.load(Marshal.dump(remaining_partitions_master))
-      tree = Marshal.load(Marshal.dump(tree_master))
+      bins, partitions, tree =
+          deep_clone(bins_master, partitions_master, tree_master)
 
-      if heuristic == "greedy"
-        bins.greedy_initial_fill!(remaining_partitions, tree, "operations")
-        bins.greedy_fill!(remaining_partitions)
-        bins.ml_operations!(tree) # FIXME: Clean up functions then this command will be unnecessary
+      # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
+      remaining_partitions = bins.initial_fill!(partitions)
 
-        csv_output << optimize_and_output(bins, heuristic, tree)
+      bins.apply_heuristic!(heuristic, remaining_partitions)
+      csv_output << bins.to_csv(heuristic)
 
-      elsif heuristic == "slice"
-
-        sort_options.each do |sort|
-
-          if sort == "lexi"
-
-            # Get taxa sorted via tree traversal
-            taxa = tree.taxa_with_nucleotides
-
-            # Lexicographic sort sites per partition
-            all_sites = taxa.values.map {|nucleotides| nucleotides.split('') }.transpose
-            partitions.each do |partition|
-              all_sites[(partition.sites.first .. partition.sites.last)] = all_sites[(partition.sites.first .. partition.sites.last)].sort
-            end
-
-            phylip_data = Hash[taxa.keys.zip(all_sites.transpose)]
-
-            # Save in tree
-            tree = tree.add_dna_sequences(phylip_data)
-
-          end
-
-          # Iterate over slicing options
-          slice_options.each do |slice|
-
-            # Get clean data
-            bins = Marshal.load( Marshal.dump(bins_master))
-            partitions = Marshal.load(Marshal.dump(partitions_master))
-            remaining_partitions = Marshal.load(Marshal.dump(remaining_partitions_master))
-
-            bins.slice_fill!(remaining_partitions, slice)
-            bins.ml_operations!(tree)
-
-            csv_output << optimize_and_output(bins, "#{slice}_#{sort}", tree)
-
-          end
-
-        end
-
+      optimization_options.each do |optimization|
+        bins.optimize!(optimization)
+        csv_output << bins.to_csv("#{heuristic}_#{optimization}")
       end
-
     end
 
 
+    # Lexicographic sorting of sites
+    tree_master.sort_sites!(partitions_master) # TODO: Check whether this actually works
+
+    heuristic_options.each do |heuristic|
+      # Get clean data
+      bins, partitions, tree =
+          deep_clone(bins_master, partitions_master, tree_master)
+
+      # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
+      remaining_partitions = bins.initial_fill!(partitions)
+
+      bins.apply_heuristic!(heuristic, remaining_partitions)
+      csv_output << bins.to_csv("#{heuristic}_lexi")
+
+      optimization_options.each do |optimization|
+        bins.optimize!(optimization)
+        csv_output << bins.to_csv("#{heuristic}_lexi_#{optimization}")
+      end
+    end
 
 
     program_runtime = (Time.now - start_time).duration

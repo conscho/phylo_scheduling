@@ -68,7 +68,7 @@ class OptimalSolution < Thor
     tree = tree.add_dna_sequences(phylip_data)
 
     # Midpoint root
-    tree = tree.set_edge_length.midpoint_root
+    tree = tree.set_edge_length!.midpointRoot
 
     # Initialize
     tree_output = []
@@ -92,7 +92,7 @@ class OptimalSolution < Thor
         partitions.each_with_index do |partition, partition_index|
           next if partition_index >= options[:crop_partitions]
           next if crop_sites > partition.sites.size
-          result = tree.ml_operations(partition.sites.first ... partition.sites.first + crop_sites)
+          result = tree.ml_operations!(partition.sites.first ... partition.sites.first + crop_sites)
 
           tree_output << { tree: options[:tree_file],
                            partition: partition.name,
