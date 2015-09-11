@@ -8,24 +8,33 @@ class Partition
   attr_reader :op_optimized
   attr_reader :op_savings
 
-  def initialize(name, sites, tree = nil)
+  def initialize(name, sites, tree = nil, compute = true)
     @name = name
     @sites = sites
-    if tree != nil
+    if !tree.nil?
       @tree = Marshal.load( Marshal.dump(tree) )
-      self.ml_operations!(@tree)
+      self.ml_operations! if compute
     end
   end
 
   # Add tree to partition and calculate operations
   def add_tree!(tree)
     @tree = Marshal.load( Marshal.dump(tree) )
-    self.ml_operations!(@tree)
+    self.ml_operations!
     self
   end
 
-  def ml_operations!(tree)
-    result = tree.ml_operations!(@sites)
+  # Have the ML operations already been calculated?
+  def calculated?
+    if !@op_optimized.nil?
+      true
+    else
+      false
+    end
+  end
+
+  def ml_operations!
+    result = @tree.ml_operations!(@sites)
     @op_maximum = result[:op_maximum]
     @op_optimized = result[:op_optimized]
     @op_savings = result[:op_savings]
@@ -33,15 +42,21 @@ class Partition
     @op_optimized
   end
 
-  def incr_add_site(site, simulate = false)
-    result = @tree.ml_operations!([site], false, simulate)
+  def incr_add_sites!(sites, simulate = false)
+    result = @tree.ml_operations!(sites, false, simulate)
     unless simulate
-      @sites << site
+      @sites.push(sites).flatten!
       @op_maximum += result[:op_maximum]
       @op_optimized += result[:op_optimized]
       @op_savings = ((@op_maximum.to_f - @op_optimized.to_f) / @op_maximum.to_f * 100)
     end
     result[:op_optimized]
+  end
+
+  # Merge another partition into this one.
+  # @return [Integer] How many operations the merge adds to the partition
+  def merge!(partition)
+    self.incr_add_sites!(partition.sites)
   end
 
   def drop_site!(site)
@@ -51,10 +66,10 @@ class Partition
 
   # Drop sites in the beginning of partition
   # @return [Partition] partition with those dropped sites
-  def drop_sites!(n)
+  def drop_sites!(n, compute = true)
     dropped_sites = @sites.first(n)
     @sites = @sites.drop(n)
-    return Partition.new(@name, dropped_sites, @tree)
+    Partition.new(@name, dropped_sites, @tree, compute)
   end
 
   def drop_random_site!

@@ -36,7 +36,7 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ["greedy", "slice"]
+    heuristic_options = ["greedy2", "greedy1", "slice"]
     optimization_options = []
     #optimization_options = ["min_max_shift", "reduce_max", "bad_sites"]
     csv_output = []
@@ -77,6 +77,7 @@ class Scheduling < Thor
 
 
     ## Original scheduling as reference ##
+    puts "Applying original scheduling"
     # Get clean data
     bins, partitions, tree =
         deep_clone(bins_master, partitions_master, tree_master)
@@ -94,6 +95,7 @@ class Scheduling < Thor
       # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
       remaining_partitions = bins.initial_fill!(partitions)
 
+      puts "Applying heuristic #{heuristic}"
       bins.apply_heuristic!(heuristic, remaining_partitions)
       csv_output << bins.to_csv(heuristic)
 
@@ -115,6 +117,7 @@ class Scheduling < Thor
       # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
       remaining_partitions = bins.initial_fill!(partitions)
 
+      puts "Applying heuristic #{heuristic}_lexi"
       bins.apply_heuristic!(heuristic, remaining_partitions)
       csv_output << bins.to_csv("#{heuristic}_lexi")
 

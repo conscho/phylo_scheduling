@@ -9,11 +9,17 @@ class Bin
     @size = 0
   end
 
-  # Add (array of) partitions to this bin
+  # Add (array of) partitions to this bin. Merge with existing partitions if they exist.
   def add!(partitions)
-    partitions.each do |partition|
-      @list << partition
-      @size += partition.op_optimized
+    partitions.each do |src_partition|
+      target_partition = self.find {|target_partition| target_partition.name == src_partition.name}
+      if !target_partition.nil?
+        @size += target_partition.merge!(src_partition)
+      else
+        src_partition.ml_operations! unless src_partition.calculated?
+        @list << src_partition
+        @size += src_partition.op_optimized
+      end
     end
     self
   end

@@ -12,9 +12,12 @@ class BinArray
 
   # Apply heuristic according to the input parameter
   def apply_heuristic!(heuristic, remaining_partitions)
-    if heuristic == "greedy"
-      self.greedy_initial_fill!(remaining_partitions)
-      self.greedy_fill!(remaining_partitions)
+    if heuristic == "greedy1"
+      self.greedy1_initial!(remaining_partitions)
+      self.greedy1_fill!(remaining_partitions)
+
+    elsif heuristic == "greedy2"
+      self.greedy2_fill!(remaining_partitions)
 
     elsif heuristic == "slice"
       self.slice_fill!(remaining_partitions)
@@ -51,7 +54,7 @@ class BinArray
   end
 
   # Fill one site of each partition into its assigned bin
-  def greedy_initial_fill!(remaining_partitions)
+  def greedy1_initial!(remaining_partitions)
     # Initialize
     site_list = remaining_partitions.sites
     site_index = 0
@@ -89,28 +92,36 @@ class BinArray
   end
 
   # Fill remaining sites where operations are minimal
-  def greedy_fill!(remaining_partitions)
+  def greedy1_fill!(remaining_partitions)
     remaining_partitions.each do |src_partition|
       src_partition.sites.each do |site|
 
         simulation_result = {}
         self.each do |bin|
-          bin.each do |target_partition|
-            if target_partition.name == src_partition.name
-              # Simulate insert of site into bin
-              operations = target_partition.incr_add_site(site, true)
+          target_partition = bin.find {|target_partition| target_partition.name == src_partition.name}
+          unless target_partition.nil?
+            # Simulate insert of site into bin
+            operations = target_partition.incr_add_sites!([site], true)
 
-              # Find out if bin.size is already larger than the lower bound, then make the operation more costly
-              operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations
-              simulation_result.merge!({operations => target_partition})
-            end
+            # Find out if bin.size is already larger than the lower bound, then make the operation more costly
+            operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations
+            simulation_result.merge!({operations => target_partition})
           end
         end
+
         # Insert at lowest operation cost
         best = simulation_result.min_by {|key, value| key}
-        best[1].incr_add_site(site)
+        best[1].incr_add_sites!([site])
 
       end
+    end
+  end
+
+  # Sequentially add sites to bin with most free space
+  def greedy2_fill!(remaining_partitions)
+    until remaining_partitions.empty?
+      dropped_partitions = remaining_partitions.drop_sites!(1, false)
+      self.min.add!(dropped_partitions)
     end
   end
 

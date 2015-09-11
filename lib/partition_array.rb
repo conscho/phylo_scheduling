@@ -71,8 +71,10 @@ class PartitionArray
 
   # Drop the first partitions that sum up to "n" sites.
   # @return [dropped_partitions] All the partitions(/sites) that have been dropped
-  def drop_sites!(n)
-    dropped_partitions = [] # TODO: Problem if no real PartitionArray?
+  # @param [Integer] n = number of sites
+  # @param [boolean] compute = Whether or not ml_operations should be calculated for the dropped partitions
+  def drop_sites!(n, compute = true)
+    dropped_partitions = []
 
     until n == 0 || @list.empty? do
 
@@ -81,7 +83,7 @@ class PartitionArray
         n = 0
 
       elsif @list[0].sites.size > n # "n" is smaller than the first partition -> crop it
-        dropped_partitions << @list[0].drop_sites!(n) # TODO: Does that change @list? -> It should
+        dropped_partitions << @list[0].drop_sites!(n, compute)
         n = 0
 
       else # "n" is bigger than first partition -> reduce "n" + drop partition
