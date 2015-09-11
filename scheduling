@@ -6,7 +6,7 @@ require 'parallel'
 require 'fileutils'
 require 'pp'
 require 'ruby-progressbar'
-require 'Newick'
+#require 'Newick' # Some problem with including the forked gem
 require 'require_all'
 
 require_all 'lib'
