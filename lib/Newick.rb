@@ -103,7 +103,7 @@ class NewickNode
 
   def tree_traversal_and_operations_count(site_number, simulate = false)  # with and without SR (subtree repeats)
     subtree_string = ''
-    count_of_children = 1 # 1 calculcation if leaf_leaf
+    count_of_children = 1 # 1 calculation if leaf_leaf
     count_of_grandchildren_SR = 0 # initializing variable. Considering subtree repeats.
     count_of_grandchildren = 0 # initializing variable. Not considering subtree repeats.
 
@@ -120,6 +120,7 @@ class NewickNode
     end
 
     # Count of operations with SR optimization & add calculated subtree (= equivalence classes)
+    subtree_string = subtree_string.gsub(/[-?XN]/, '-') # Convert all undefined characters to '-'
     op_optimized = if @calculated_subtrees.has_key?(subtree_string)
                      @calculated_subtrees[subtree_string] << site_number unless simulate
                      0
