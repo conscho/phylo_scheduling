@@ -74,7 +74,7 @@ class PartitionArray
   def drop_sites!(n)
     dropped_partitions = [] # TODO: Problem if no real PartitionArray?
 
-    until n == 0 do
+    until n == 0 || @list.empty? do
 
       if @list[0].sites.size == n # "n" is as big as the first partition -> drop it
         dropped_partitions << self.drop!(1).first
@@ -94,8 +94,15 @@ class PartitionArray
     return dropped_partitions
   end
 
+  # In-place sorting after "op_optimized"
   def sort!
     @list = @list.sort
+    self
+  end
+
+  # In-place sorting by number of sites per partition
+  def sort_by_sites!
+    @list = @list.sort_by {|partition| partition.sites.size}
     self
   end
 

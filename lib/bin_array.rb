@@ -126,9 +126,6 @@ class BinArray
 
       # How many sites need to go into the current bin
       number_of_sites = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_sites_remaining).ceil # FIXME: It's probably better to round down and save overflow in last bin
-      # Exact fit rounding adjustment
-      full_bins += 1
-      number_of_sites -= 1 if full_bins > @list.size - @rounding_adjustment_operations
 
       # Fill "number_of_sites" sites taken from "remaining_partitions" into the bin. The rest stays in "remaining_partitions"
       dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
@@ -139,6 +136,9 @@ class BinArray
 
   # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
   def original_scheduling!(partitions)
+    # Phase 1: Sort partitions by sites.site
+    partitions.sort_by_sites!
+
     # Phase 2: Initial filling
     bin_assigner = 0
     full_bins = 0
@@ -162,7 +162,7 @@ class BinArray
 
     # Phase 3: Partitioning
     # Fill each bin starting with the least filled
-    self.sort.each do |bin|
+    self.sort_by {|bin| bin.total_sites}.each do |bin|
 
       # How many sites need to go into the current bin
       number_of_sites = @lower_bound_sites - bin.total_sites
