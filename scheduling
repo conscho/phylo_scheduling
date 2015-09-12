@@ -36,7 +36,7 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ["greedy3", "greedy2", "greedy1", "slice"]
+    heuristic_options = ["greedy1", "greedy2", "greedy3", "slice"]
     optimization_options = []
     #optimization_options = ["min_max_shift", "reduce_max", "bad_sites"]
     csv_output = []

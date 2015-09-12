@@ -97,26 +97,33 @@ class BinArray
   # Fill remaining sites where operations are minimal
   def greedy1_fill!(remaining_partitions)
     remaining_partitions.each do |src_partition|
+      # Test each site ...
       src_partition.sites.each do |site|
 
         simulation_result = {}
-        self.each do |bin|
+        # ... in each bin
+        self.each_with_index do |bin, bin_index|
           target_partition = bin.list[src_partition.name]
           if target_partition.nil?
             # Simulate creation of partition in current bin since partition does not exist yet
-            operations = bin.simulate_add([Partition.new(src_partition.name, [site], src_partition.tree)])
+            operations = Float::INFINITY
           else
             # Simulate insertion of site into existing partition of current bin
             operations = target_partition.incr_add_sites!([site], true)
+            # Find out if bin.size is already larger than the lower bound, then make the operation more costly
+            operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations # FIXME: Very hacky
           end
-          # Find out if bin.size is already larger than the lower bound, then make the operation more costly
-          operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations # FIXME: Very hacky
-          simulation_result.merge!({operations => target_partition})
+          simulation_result.merge!({operations => bin_index})
         end
 
         # Insert at lowest operation cost
         best = simulation_result.min_by {|key, value| key}
-        best[1].incr_add_sites!([site])
+        target_partition = @list[best[1]].list[src_partition.name]
+        if target_partition.nil?
+          @list[best[1]].add!([Partition.new(src_partition.name, [site], src_partition.tree)])
+        else
+          target_partition.incr_add_sites!([site])
+        end
 
       end
     end
