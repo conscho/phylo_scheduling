@@ -129,30 +129,34 @@ class BinArray
   end
 
   def greedy3_fill!(remaining_partitions)
-    until remaining_partitions.empty?
-      # First site of each partition in "remaining_partitions"
-      partition_selection = remaining_partitions.map {|partition| partition.drop_sites(1, false)}
+    # First site of each partition in "remaining_partitions"
+    partition_selection = Hash[remaining_partitions.map {|partition| [partition.drop_sites!(1, false), partition.sites.size]}]
+    remaining_partitions.compact!
 
-      # Simulate and get minimum operations
-      simulation_result = [Float::INFINITY, []]
-      partition_selection.each do |partition|
-        operations = self.min.simulate_add([partition])
+    until partition_selection.empty?
+      # Simulate and get all partitions with minimal operations
+      simulation_result = [Float::INFINITY, {}]
+      smallest_bin = self.min
+      partition_selection.each do |partition, original_sites|
+        operations = smallest_bin.simulate_add([partition])
         if operations < simulation_result[0]
-          simulation_result = [operations, [partition.name]]
+          simulation_result = [operations, {partition => original_sites}]
         elsif operations == simulation_result[0]
-          simulation_result[1] << partition.name
+          simulation_result[1][partition] = original_sites
         end
       end
 
-      # Get partitions
-      partitions = simulation_result[1].map do |partition_name|
-        remaining_partitions.find {|partition| partition.name == partition_name}
-      end
+      # If there are multiple solutions get the biggest partition
+      max_partition = simulation_result[1].max_by {|partition, original_sites| original_sites}[0]
+      smallest_bin.add!([ max_partition ])
 
-      # Add the partition with the most sites to the smallest bin
-      dropped_partition = partitions.max_by {|partition| partition.sites.size }.drop_sites!(1, false)
-      remaining_partitions.compact!
-      self.min.add!([dropped_partition])
+      # Get replacement for added partition
+      partition_selection.delete(max_partition)
+      unless remaining_partitions.list[max_partition.name].nil?
+        partition_selection[remaining_partitions.list[max_partition.name].drop_sites!(1, false)] =
+            remaining_partitions.list[max_partition.name].sites.size
+        remaining_partitions.compact!
+      end
     end
   end
 
