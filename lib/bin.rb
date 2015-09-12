@@ -5,19 +5,19 @@ class Bin
   attr_reader :size
 
   def initialize
-    @list = []
+    @list = {}
     @size = 0
   end
 
   # Add (array of) partitions to this bin. Merge with existing partitions if they exist.
   def add!(partitions)
     partitions.each do |src_partition|
-      target_partition = self.find {|target_partition| target_partition.name == src_partition.name}
+      target_partition = @list[src_partition.name]
       if !target_partition.nil?
         @size += target_partition.merge!(src_partition)
       else
         src_partition.ml_operations! unless src_partition.calculated?
-        @list << src_partition
+        @list[src_partition.name] = src_partition
         @size += src_partition.op_optimized
       end
     end
@@ -29,7 +29,7 @@ class Bin
   def simulate_add(partitions)
     operations = 0
     partitions.each do |src_partition|
-      target_partition = self.find {|target_partition| target_partition.name == src_partition.name}
+      target_partition = @list[src_partition.name]
       if !target_partition.nil?
         operations += target_partition.merge!(src_partition, true)
       else
@@ -42,28 +42,24 @@ class Bin
   end
 
   def update_size!
-    @size = @list.map {|partition| partition.op_optimized}.reduce(:+)
+    @size = @list.each_value.map {|partition| partition.op_optimized}.reduce(:+)
     self
-  end
-
-  def last
-    @list.last
   end
 
   def total_sites
     if @list.empty?
       0
     else
-      self.map {|partition| partition.sites.size}.reduce(:+)
+      @list.each_value.map {|partition| partition.sites.size}.reduce(:+)
     end
   end
 
   def to_s(option = "none")
     if option == "fill_level"
-      "[size: #{@size}, partition: #{@list.size}, sites: #{self.total_sites}]"
+      "[size: #{@size}, partitions: #{@list.size}, sites: #{self.total_sites}]"
     else
       string = "[size: #{@size}, partitions: "
-      @list.each {|partition| string += "(#{partition.to_s}), "}
+      @list.each_value {|partition| string += "(#{partition.to_s}), "}
       if string.size > 1
         string[0..-3] + "]"
       else
@@ -73,11 +69,11 @@ class Bin
   end
 
   def to_csv(hash)
-    self.map {|partition| partition.to_csv(hash)}
+    @list.each_value.map {|partition| partition.to_csv(hash)}
   end
 
   def each(&block)
-    @list.each do |partition|
+    @list.each_value do |partition|
       if block_given?
         block.call(partition)
       else

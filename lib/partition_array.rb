@@ -3,9 +3,9 @@ class PartitionArray
   attr_reader :list
 
   def initialize(partitions_hash)
-    @list = []
+    @list = {}
     partitions_hash.each do |partition_name, partition_sites|
-      @list << Partition.new(partition_name, partition_sites)
+      @list[partition_name] = Partition.new(partition_name, partition_sites)
     end
   end
 
@@ -22,7 +22,7 @@ class PartitionArray
 
   # Add tree to each partition and calculate operations
   def add_tree!(tree)
-    @list.each do |partition|
+    @list.each_value do |partition|
       partition.add_tree!(tree)
     end
     self
@@ -30,20 +30,20 @@ class PartitionArray
 
   # Get array of all names of partitions
   def names
-    @list.map {|partition| partition.name}
+    @list.keys
   end
 
   def op_optimized_size
-    @list.map {|partition| partition.op_optimized}.reduce(:+)
+    @list.each_value.map {|partition| partition.op_optimized}.reduce(:+)
   end
 
   def total_sites
-    @list.map {|partition| partition.sites.size}.reduce(:+)
+    @list.each_value.map {|partition| partition.sites.size}.reduce(:+)
   end
 
   # Returns an array of hashes with site => partition_name of all containing partitions
   def sites
-    @list.map {|partition| partition.sites.each_with_object(partition.name).map {|site, partition_name| {site => partition_name} }}.flatten(1)
+    @list.map {|partition_name, partition| partition.sites.map {|site| {site => partition_name} }}.flatten(1)
   end
 
   def empty?
@@ -52,25 +52,19 @@ class PartitionArray
 
   # Delete all partitions that have 0 sites
   def compact!
-    @list.reject! {|partition| partition.sites.size == 0}
-  end
-
-  # Put the "partition" into "position" overwriting the previous one
-  def replace!(position, partition)
-    @list[position] = partition
-    self
+    @list.delete_if {|partition_name, partition| partition.sites.size == 0}
   end
 
   def add!(partition)
-    @list << partition
+    @list[partition.name] = partition
     self
   end
 
   # Drops "n" partitions in-place and returns those dropped partitions.
   # @return [dropped_elements] Array of Partitions
   def drop!(n)
-    dropped_elements = @list.first(n)
-    @list = @list.drop(n)
+    dropped_elements = @list.values.first(n)
+    @list = Hash[@list.drop(n)]
     return dropped_elements
   end
 
@@ -83,16 +77,16 @@ class PartitionArray
 
     until n == 0 || @list.empty? do
 
-      if @list[0].sites.size == n # "n" is as big as the first partition -> drop it
+      if @list.values[0].sites.size == n # "n" is as big as the first partition -> drop it
         dropped_partitions << self.drop!(1).first
         n = 0
 
-      elsif @list[0].sites.size > n # "n" is smaller than the first partition -> crop it
-        dropped_partitions << @list[0].drop_sites!(n, compute)
+      elsif @list.values[0].sites.size > n # "n" is smaller than the first partition -> crop it
+        dropped_partitions << @list.values[0].drop_sites!(n, compute)
         n = 0
 
       else # "n" is bigger than first partition -> reduce "n" + drop partition
-        n -= @list[0].sites.size
+        n -= @list.values[0].sites.size
         dropped_partitions << self.drop!(1).first
 
       end
@@ -103,13 +97,13 @@ class PartitionArray
 
   # In-place sorting after "op_optimized"
   def sort!
-    @list = @list.sort
+    @list = Hash[@list.sort_by {|partition_name, partition| partition}]
     self
   end
 
   # In-place sorting by number of sites per partition
   def sort_by_sites!
-    @list = @list.sort_by {|partition| partition.sites.size}
+    @list = Hash[@list.sort_by {|partition_name, partition| partition.sites.size}]
     self
   end
 
@@ -118,7 +112,7 @@ class PartitionArray
   end
 
   def each(&block)
-    @list.each do |partition|
+    @list.each_value do |partition|
       if block_given?
         block.call(partition)
       else
@@ -129,7 +123,7 @@ class PartitionArray
 
   def to_s
     string = "["
-    @list.each {|partition| string += "(#{partition.to_s}), "}
+    @list.each_value {|partition| string += "(#{partition.to_s}), "}
     if string.size > 1
       string[0..-3] + "]"
     else
