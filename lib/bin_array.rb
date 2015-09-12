@@ -72,7 +72,7 @@ class BinArray
       sites_for_bin = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_sites_remaining).floor
 
       # Pick (random) site of partition, add to bin and drop from remaining sites
-      dropped_partition = remaining_partitions.list[partition_index].drop_random_site!
+      dropped_partition = remaining_partitions.list.values[partition_index].drop_random_site!
       bin.add!([dropped_partition])
 
       # Do we need to fill two partitions in this bin?
@@ -80,7 +80,7 @@ class BinArray
         partition_index += 1
 
         # Pick (random) site of partition, add to bin and drop from remaining sites
-        dropped_partition = remaining_partitions.list[partition_index].drop_random_site!
+        dropped_partition = remaining_partitions.list.values[partition_index].drop_random_site!
         bin.add!([dropped_partition])
 
       elsif bin_index < @list.size # Prevent index out of bound
@@ -101,7 +101,7 @@ class BinArray
 
         simulation_result = {}
         self.each do |bin|
-          target_partition = bin.find {|target_partition| target_partition.name == src_partition.name}
+          target_partition = bin.list[src_partition.name]
           unless target_partition.nil?
             # Simulate insert of site into bin
             operations = target_partition.incr_add_sites!([site], true)
