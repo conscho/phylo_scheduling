@@ -267,7 +267,7 @@ class BinArray
 
   # Total operations of all bins
   def size
-    @list.map {|bin| bin.size}.reduce(:+)
+    @list.map {|bin| bin.size}.reduce(0, :+)
   end
 
   def update_bin_sizes!
@@ -279,7 +279,7 @@ class BinArray
 
   # How many sites are there in total over all bins
   def total_sites
-    @list.map {|bin| bin.total_sites}.reduce(:+)
+    @list.map {|bin| bin.total_sites}.reduce(0, :+)
   end
 
   # Free space compared to the lower bound for each bin
@@ -293,7 +293,7 @@ class BinArray
 
   # Total free space over all bins compared to the lower bound
   def total_free_space
-    self.free_spaces.reduce(:+)
+    self.free_spaces.reduce(0, :+)
   end
 
   # Set lower bound for operations and sites

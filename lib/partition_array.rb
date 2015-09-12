@@ -34,11 +34,11 @@ class PartitionArray
   end
 
   def op_optimized_size
-    @list.each_value.map {|partition| partition.op_optimized}.reduce(:+)
+    @list.each_value.map {|partition| partition.op_optimized}.reduce(0, :+)
   end
 
   def total_sites
-    @list.each_value.map {|partition| partition.sites.size}.reduce(:+)
+    @list.each_value.map {|partition| partition.sites.size}.reduce(0, :+)
   end
 
   # Returns an array of hashes with site => partition_name of all containing partitions

@@ -42,7 +42,7 @@ class Bin
   end
 
   def update_size!
-    @size = @list.each_value.map {|partition| partition.op_optimized}.reduce(:+)
+    @size = @list.each_value.map {|partition| partition.op_optimized}.reduce(0, :+)
     self
   end
 
@@ -50,7 +50,7 @@ class Bin
     if @list.empty?
       0
     else
-      @list.each_value.map {|partition| partition.sites.size}.reduce(:+)
+      @list.each_value.map {|partition| partition.sites.size}.reduce(0, :+)
     end
   end
 
