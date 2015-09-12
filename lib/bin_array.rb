@@ -71,7 +71,7 @@ class BinArray
       # How many sites need to go into the current bin
       sites_for_bin = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_sites_remaining).floor
 
-      # Pick (random) site of partition, add to bin and drop from remaining sites
+      # Pick (random) site of partition, add to bin and drop from "remaining_partitions"
       dropped_partition = remaining_partitions.list.values[partition_index].drop_random_site!
       bin.add!([dropped_partition])
 
@@ -79,7 +79,7 @@ class BinArray
       if site_list[site_index].values.first != site_list[site_index + sites_for_bin - 1].values.first
         partition_index += 1
 
-        # Pick (random) site of partition, add to bin and drop from remaining sites
+        # Pick (random) site of partition, add to bin and drop from "remaining_partitions"
         dropped_partition = remaining_partitions.list.values[partition_index].drop_random_site!
         bin.add!([dropped_partition])
 
@@ -102,14 +102,16 @@ class BinArray
         simulation_result = {}
         self.each do |bin|
           target_partition = bin.list[src_partition.name]
-          unless target_partition.nil?
-            # Simulate insert of site into bin
+          if target_partition.nil?
+            # Simulate creation of partition in current bin since partition does not exist yet
+            operations = bin.simulate_add([Partition.new(src_partition.name, [site], src_partition.tree)])
+          else
+            # Simulate insertion of site into existing partition of current bin
             operations = target_partition.incr_add_sites!([site], true)
-
-            # Find out if bin.size is already larger than the lower bound, then make the operation more costly
-            operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations
-            simulation_result.merge!({operations => target_partition})
           end
+          # Find out if bin.size is already larger than the lower bound, then make the operation more costly
+          operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations # FIXME: Very hacky
+          simulation_result.merge!({operations => target_partition})
         end
 
         # Insert at lowest operation cost
@@ -122,40 +124,67 @@ class BinArray
 
   # Sequentially add sites to bin with most free space
   def greedy2_fill!(remaining_partitions)
-    until remaining_partitions.empty?
-      dropped_partitions = remaining_partitions.drop_sites!(1, false)
-      self.min.add!(dropped_partitions)
+    remaining_partitions.each do |src_partition|
+      src_partition.sites.each do |site|
+
+        smallest_bin = self.update_bin_sizes!.min
+        target_partition = smallest_bin.list[src_partition.name]
+        if target_partition.nil?
+          smallest_bin.add!([Partition.new(src_partition.name, [site], src_partition.tree)])
+        else
+          target_partition.incr_add_sites!([site])
+        end
+
+      end
     end
   end
 
   def greedy3_fill!(remaining_partitions)
-    # First site of each partition in "remaining_partitions"
-    partition_selection = Hash[remaining_partitions.map {|partition| [partition.drop_sites!(1, false), partition.sites.size]}]
-    remaining_partitions.compact!
+    # Initialize index for site selection for each partition in "remaining_partitions"
+    partition_indexes = Hash[remaining_partitions.map {|partition| [partition.name, {index: 0, sites: partition.sites.size}]}]
 
-    until partition_selection.empty?
-      # Simulate and get all partitions with minimal operations
-      simulation_result = [Float::INFINITY, {}]
-      smallest_bin = self.min
-      partition_selection.each do |partition, original_sites|
-        operations = smallest_bin.simulate_add([partition])
-        if operations < simulation_result[0]
-          simulation_result = [operations, {partition => original_sites}]
-        elsif operations == simulation_result[0]
-          simulation_result[1][partition] = original_sites
+    until partition_indexes.empty?
+
+      # Simulate adding each site and get the respective required operations
+      simulation_result = {operations: Float::INFINITY, partition_name: [], partition_sites: []}
+      smallest_bin = self.update_bin_sizes!.min
+      partition_indexes.each do |partition_name, values|
+        target_partition = smallest_bin.list[partition_name]
+        operations = if target_partition.nil?
+                       Float::INFINITY
+                     else
+                       target_partition.incr_add_sites!( [ remaining_partitions.list[partition_name].sites[values[:index]] ], true )
+                     end
+
+        # Save the partitions with minimal operations
+        if operations < simulation_result[:operations]
+          simulation_result[:operations] = operations
+          simulation_result[:partition_name] = [partition_name]
+          simulation_result[:partition_sites] = [values[:sites]]
+        elsif operations == simulation_result[:operations]
+          simulation_result[:partition_name] << partition_name
+          simulation_result[:partition_sites] << values[:sites]
         end
       end
 
-      # If there are multiple solutions get the biggest partition
-      max_partition = simulation_result[1].max_by {|partition, original_sites| original_sites}[0]
-      smallest_bin.add!([ max_partition ])
+      # If there are multiple solutions get the partition with the most sites
+      max_partition_name = simulation_result[:partition_name][simulation_result[:partition_sites].each_with_index.max[1]]
 
-      # Get replacement for added partition
-      partition_selection.delete(max_partition)
-      unless remaining_partitions.list[max_partition.name].nil?
-        partition_selection[remaining_partitions.list[max_partition.name].drop_sites!(1, false)] =
-            remaining_partitions.list[max_partition.name].sites.size
-        remaining_partitions.compact!
+      # Add site or new partition
+      target_partition = smallest_bin.list[max_partition_name]
+      if target_partition.nil?
+        smallest_bin.add!([Partition.new(max_partition_name,
+                                         [remaining_partitions.list[max_partition_name].sites[partition_indexes[max_partition_name][:index]]],
+                                         remaining_partitions.list[max_partition_name].tree)])
+      else
+        target_partition.incr_add_sites!( [ remaining_partitions.list[max_partition_name].sites[partition_indexes[max_partition_name][:index]] ] )
+      end
+
+      # Get next site or remove partition entry if all sites of partition already distributed
+      if partition_indexes[max_partition_name][:index] < partition_indexes[max_partition_name][:sites] - 1
+        partition_indexes[max_partition_name][:index] += 1
+      else
+        partition_indexes.delete(max_partition_name)
       end
     end
   end
@@ -232,6 +261,13 @@ class BinArray
   # Total operations of all bins
   def size
     @list.map {|bin| bin.size}.reduce(:+)
+  end
+
+  def update_bin_sizes!
+    @list.each do |bin|
+      bin.update_size!
+    end
+    self
   end
 
   # How many sites are there in total over all bins

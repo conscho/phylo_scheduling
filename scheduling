@@ -107,7 +107,7 @@ class Scheduling < Thor
 
 
     # Lexicographic sorting of sites
-    tree_master.sort_sites!(partitions_master) # TODO: Check whether this actually works
+    tree_master.sort_sites!(partitions_master)
 
     heuristic_options.each do |heuristic|
       # Get clean data
