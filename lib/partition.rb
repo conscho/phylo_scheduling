@@ -55,13 +55,8 @@ class Partition
 
   # Merge another partition into this one.
   # @return [Integer] How many operations the merge adds to the partition
-  def merge!(partition)
-    self.incr_add_sites!(partition.sites)
-  end
-
-  def drop_site!(site)
-    @sites.delete(site)
-    self
+  def merge!(partition, simulate = false)
+    self.incr_add_sites!(partition.sites, simulate)
   end
 
   # Drop sites in the beginning of partition
@@ -69,6 +64,13 @@ class Partition
   def drop_sites!(n, compute = true)
     dropped_sites = @sites.first(n)
     @sites = @sites.drop(n)
+    Partition.new(@name, dropped_sites, @tree, compute)
+  end
+
+  # Drop sites in the beginning of partition
+  # @return [Partition] partition with those dropped sites
+  def drop_sites(n, compute = true)
+    dropped_sites = @sites.first(n)
     Partition.new(@name, dropped_sites, @tree, compute)
   end
 

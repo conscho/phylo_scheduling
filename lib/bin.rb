@@ -24,6 +24,23 @@ class Bin
     self
   end
 
+  # Simulate adding (array of) partitions to this bin. Merge with existing partitions if they exist.
+  # @return [Integer] Operations that would be added to the bin if you add these partitions
+  def simulate_add(partitions)
+    operations = 0
+    partitions.each do |src_partition|
+      target_partition = self.find {|target_partition| target_partition.name == src_partition.name}
+      if !target_partition.nil?
+        operations += target_partition.merge!(src_partition, true)
+      else
+        src_partition.ml_operations! unless src_partition.calculated?
+        operations += src_partition.op_optimized
+      end
+    end
+
+    operations
+  end
+
   def update_size!
     @size = @list.map {|partition| partition.op_optimized}.reduce(:+)
     self

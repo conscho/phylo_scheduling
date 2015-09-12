@@ -19,6 +19,9 @@ class BinArray
     elsif heuristic == "greedy2"
       self.greedy2_fill!(remaining_partitions)
 
+    elsif heuristic == "greedy3"
+      self.greedy3_fill!(remaining_partitions)
+
     elsif heuristic == "slice"
       self.slice_fill!(remaining_partitions)
 
@@ -125,6 +128,34 @@ class BinArray
     end
   end
 
+  def greedy3_fill!(remaining_partitions)
+    until remaining_partitions.empty?
+      # First site of each partition in "remaining_partitions"
+      partition_selection = remaining_partitions.map {|partition| partition.drop_sites(1, false)}
+
+      # Simulate and get minimum operations
+      simulation_result = [Float::INFINITY, []]
+      partition_selection.each do |partition|
+        operations = self.min.simulate_add([partition])
+        if operations < simulation_result[0]
+          simulation_result = [operations, [partition.name]]
+        elsif operations == simulation_result[0]
+          simulation_result[1] << partition.name
+        end
+      end
+
+      # Get partitions
+      partitions = simulation_result[1].map do |partition_name|
+        remaining_partitions.find {|partition| partition.name == partition_name}
+      end
+
+      # Add the partition with the most sites to the smallest bin
+      dropped_partition = partitions.max_by {|partition| partition.sites.size }.drop_sites!(1, false)
+      remaining_partitions.compact!
+      self.min.add!([dropped_partition])
+    end
+  end
+
   # Use a slicing algorithm to fill the bins. It makes use of the still available space compared to the lower bound in each bin.
   def slice_fill!(remaining_partitions)
     # Total number of sites that need to be distributed
@@ -224,12 +255,6 @@ class BinArray
     @rounding_adjustment_operations = @lower_bound_operations * @list.size - partitions.op_optimized_size
     @lower_bound_sites = (partitions.total_sites.to_f / @list.size).ceil
     @rounding_adjustment_sites = @lower_bound_sites * @list.size - partitions.total_sites
-  end
-
-  def ml_operations!(tree)
-    @list.each do |bin|
-      bin.ml_operations!(tree)
-    end
   end
 
   def to_s(option = "none")

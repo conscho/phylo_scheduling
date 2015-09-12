@@ -50,6 +50,11 @@ class PartitionArray
     @list.empty?
   end
 
+  # Delete all partitions that have 0 sites
+  def compact!
+    @list.reject! {|partition| partition.sites.size == 0}
+  end
+
   # Put the "partition" into "position" overwriting the previous one
   def replace!(position, partition)
     @list[position] = partition
