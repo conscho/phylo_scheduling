@@ -77,18 +77,46 @@ class PartitionArray
 
     until n == 0 || @list.empty? do
 
-      if @list.values[0].sites.size == n # "n" is as big as the first partition -> drop it
-        dropped_partitions << self.drop!(1).first
-        n = 0
-
-      elsif @list.values[0].sites.size > n # "n" is smaller than the first partition -> crop it
-        dropped_partitions << @list.values[0].drop_sites!(n, compute)
-        n = 0
-
-      else # "n" is bigger than first partition -> reduce "n" + drop partition
+      if @list.values[0].sites.size <= n # "n" is as big as the first partition -> drop it
         n -= @list.values[0].sites.size
         dropped_partitions << self.drop!(1).first
 
+      else # "n" is smaller than the first partition -> crop it
+        dropped_partitions << @list.values[0].drop_sites!(n, compute)
+        n = 0
+
+      end
+
+    end
+    return dropped_partitions
+  end
+
+  # Drop the first partitions that sum up to "target_operations" operations
+  def drop_operations!(target_operations)
+    dropped_partitions = []
+    operations = 0
+
+    until operations > target_operations || @list.empty? do
+
+      if @list.values[0].op_optimized <= target_operations - operations
+        operations += @list.values[0].op_optimized
+        dropped_partitions << self.drop!(1).first
+
+      else
+        # Create new partition
+        partition = @list.values[0].drop_sites!(1)
+        operations += partition.op_optimized
+
+        # Add sites to partition
+        until operations > target_operations
+          sites = @list.values[0].delete_sites!(1)
+          operations += partition.incr_add_sites!(sites)
+        end
+
+        # Update size of remaining partition
+        @list.values[0].ml_operations!
+
+        dropped_partitions << partition
       end
 
     end

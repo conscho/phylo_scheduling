@@ -25,6 +25,8 @@ class BinArray
     elsif heuristic == "slice"
       self.slice_fill!(remaining_partitions)
 
+    elsif heuristic == "slide"
+      self.slide_fill!(remaining_partitions)
     end
   end
 
@@ -196,12 +198,29 @@ class BinArray
     end
   end
 
+  # Get ratio of free space for each bin, then fill remaining partitions based on this ratio and the operations left
+  def slide_fill!(remaining_partitions)
+    # Fill each bin starting with the least filled
+    self.sort.each do |bin|
+      # Total number of operations that need to go into this bin
+      total_operations_remaining = remaining_partitions.op_optimized_size
+      total_free_space = self.total_free_space
+
+      # How many operations need to go into the current bin
+      operations_for_bin = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_operations_remaining).ceil
+
+      # Fill sites that add up to "operations_for_bin" taken from "remaining_partitions" into the bin.
+      # The rest stays in "remaining_partitions".
+      dropped_partitions = remaining_partitions.drop_operations!(operations_for_bin)
+      bin.add!(dropped_partitions)
+    end
+  end
+
   # Use a slicing algorithm to fill the bins. It makes use of the still available space compared to the lower bound in each bin.
   def slice_fill!(remaining_partitions)
     # Total number of sites that need to be distributed
     total_sites_remaining = remaining_partitions.total_sites
     total_free_space = self.total_free_space
-    full_bins = 0
 
     # Fill each bin starting with the least filled
     self.sort.each do |bin|
@@ -212,7 +231,6 @@ class BinArray
       # Fill "number_of_sites" sites taken from "remaining_partitions" into the bin. The rest stays in "remaining_partitions"
       dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
       bin.add!(dropped_partitions)
-
     end
   end
 
@@ -284,7 +302,7 @@ class BinArray
 
   # Free space compared to the lower bound for each bin
   def free_spaces
-    @list.map {|bin| @lower_bound_operations - bin.size}
+    @list.map { |bin| [@lower_bound_operations - bin.size, 0].max }
   end
 
   def average_bin_size

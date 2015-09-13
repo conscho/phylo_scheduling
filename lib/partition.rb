@@ -74,6 +74,14 @@ class Partition
     Partition.new(@name, dropped_sites, @tree, compute)
   end
 
+  # Delete sites without updating sizes.
+  # @return [Array of dropped sites]
+  def delete_sites!(n)
+    dropped_sites = @sites.first(n)
+    @sites = @sites.drop(n)
+    dropped_sites
+  end
+
   def drop_random_site!
     dropped_site = @sites.sample
     @sites.delete(dropped_site)
