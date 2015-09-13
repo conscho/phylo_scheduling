@@ -8,6 +8,7 @@ require 'pp'
 require 'ruby-progressbar'
 #require 'Newick' # Some problem with including the forked gem
 require 'require_all'
+require 'deep_clone'
 
 require_all 'lib'
 
@@ -80,8 +81,9 @@ class Scheduling < Thor
     ## Original scheduling as reference ##
     puts "Applying original scheduling"
     # Get clean data
-    bins, partitions, tree =
-        deep_clone(bins_master, partitions_master, tree_master)
+    bins = DeepClone.clone bins_master
+    partitions = DeepClone.clone partitions_master
+    tree = DeepClone.clone tree_master
 
     bins.original_scheduling!(partitions)
     csv_output << bins.to_csv("original_scheduling")
@@ -92,8 +94,9 @@ class Scheduling < Thor
       puts "Applying heuristic #{heuristic}"
 
       # Get clean data
-      bins, partitions, tree =
-          deep_clone(bins_master, partitions_master, tree_master)
+      bins = DeepClone.clone bins_master
+      partitions = DeepClone.clone partitions_master
+      tree = DeepClone.clone tree_master
 
       # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
       remaining_partitions = bins.initial_fill!(partitions)
@@ -117,8 +120,9 @@ class Scheduling < Thor
       puts "Applying heuristic #{heuristic}_lexi"
 
       # Get clean data
-      bins, partitions, tree =
-          deep_clone(bins_master, partitions_master, tree_master)
+      bins = DeepClone.clone bins_master
+      partitions = DeepClone.clone partitions_master
+      tree = DeepClone.clone tree_master
 
       # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
       remaining_partitions = bins.initial_fill!(partitions)

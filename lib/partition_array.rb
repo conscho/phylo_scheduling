@@ -14,7 +14,7 @@ class PartitionArray
     in_file = File.new(file_name)
     in_file.each do |line|
       match_object = /, ?(?<name>.*) = (?<start>\d+)-(?<end>\d+)/.match(line)
-      partitions_hash[(match_object[:name].to_sym)] = ((match_object[:start].to_i - 1) .. (match_object[:end].to_i - 1)).to_a
+      partitions_hash[(match_object[:name])] = ((match_object[:start].to_i - 1) .. (match_object[:end].to_i - 1)).to_a
     end
     in_file.close
     return PartitionArray.new(partitions_hash)

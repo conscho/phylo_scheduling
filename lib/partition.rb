@@ -12,14 +12,14 @@ class Partition
     @name = name
     @sites = sites
     if !tree.nil?
-      @tree = Marshal.load( Marshal.dump(tree) )
+      @tree = DeepClone.clone tree
       self.ml_operations! if compute
     end
   end
 
   # Add tree to partition and calculate operations
   def add_tree!(tree, compute = true)
-    @tree = Marshal.load( Marshal.dump(tree) )
+    @tree = DeepClone.clone tree
     self.ml_operations! if compute
     self
   end

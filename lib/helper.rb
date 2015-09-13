@@ -103,10 +103,3 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
 
   return reduced_number_of_sites, reduced_partitions, reduced_phylip_data, reduced_partition_file, reduced_phylip_file
 end
-
-
-def deep_clone(bins, partitions, tree)
-  return [Marshal.load(Marshal.dump(bins)),
-          Marshal.load(Marshal.dump(partitions)),
-          Marshal.load(Marshal.dump(tree))]
-end
