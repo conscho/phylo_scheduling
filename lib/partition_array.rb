@@ -21,9 +21,9 @@ class PartitionArray
   end
 
   # Add tree to each partition and calculate operations
-  def add_tree!(tree)
+  def add_tree!(tree, compute = true)
     @list.each_value do |partition|
-      partition.add_tree!(tree)
+      partition.add_tree!(tree, compute)
     end
     self
   end

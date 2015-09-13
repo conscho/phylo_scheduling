@@ -578,7 +578,7 @@ class NewickTree
     end
 
     # Save in tree
-    self.add_dna_sequences(Hash[taxa.keys.zip(all_sites.transpose)])
+    self.add_dna_sequences(Hash[taxa.keys.zip(all_sites.transpose.map {|nucleotides| nucleotides.join })])
   end
 
   # return hash of taxa name and nucleotides in tree

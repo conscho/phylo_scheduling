@@ -60,6 +60,7 @@ class Scheduling < Thor
 
 
     # Get data
+    puts "Getting data"
     tree_master = NewickTree.fromFile(options[:tree_file])
     tree_master = tree_master.add_dna_sequences(phylip_data)
 
@@ -88,6 +89,8 @@ class Scheduling < Thor
 
     # Standard sorting of sites
     heuristic_options.each do |heuristic|
+      puts "Applying heuristic #{heuristic}"
+
       # Get clean data
       bins, partitions, tree =
           deep_clone(bins_master, partitions_master, tree_master)
@@ -95,7 +98,6 @@ class Scheduling < Thor
       # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
       remaining_partitions = bins.initial_fill!(partitions)
 
-      puts "Applying heuristic #{heuristic}"
       bins.apply_heuristic!(heuristic, remaining_partitions)
       csv_output << bins.to_csv(heuristic)
 
@@ -107,9 +109,13 @@ class Scheduling < Thor
 
 
     # Lexicographic sorting of sites
+    puts "Sorting sites lexicographically"
     tree_master.sort_sites!(partitions_master)
+    partitions_master.add_tree!(tree_master, false)
 
     heuristic_options.each do |heuristic|
+      puts "Applying heuristic #{heuristic}_lexi"
+
       # Get clean data
       bins, partitions, tree =
           deep_clone(bins_master, partitions_master, tree_master)
@@ -117,7 +123,6 @@ class Scheduling < Thor
       # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
       remaining_partitions = bins.initial_fill!(partitions)
 
-      puts "Applying heuristic #{heuristic}_lexi"
       bins.apply_heuristic!(heuristic, remaining_partitions)
       csv_output << bins.to_csv("#{heuristic}_lexi")
 

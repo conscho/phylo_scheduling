@@ -18,9 +18,9 @@ class Partition
   end
 
   # Add tree to partition and calculate operations
-  def add_tree!(tree)
+  def add_tree!(tree, compute = true)
     @tree = Marshal.load( Marshal.dump(tree) )
-    self.ml_operations!
+    self.ml_operations! if compute
     self
   end
 
