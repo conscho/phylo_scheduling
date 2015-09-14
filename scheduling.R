@@ -47,13 +47,14 @@ for (parameter.file in files) {
   gp = ggplot(combData, aes(x=bin, ymax=operations_sites)) + 
     scale_x_discrete(limit = 0:max(combData$bin)) + 
     geom_blank(aes(y=operations_sites*1.1), position = "stack") + ylab("") + ## Dirty hack to increase upper boundary of y-axis 
+    geom_rect(data = subset(sumData, operations_sites == min(sumData$operations_sites)), aes(xmin = -Inf, ymin = -Inf, xmax = +Inf, ymax = Inf), fill = "green", alpha = 30/100) + 
     geom_bar(aes(x=bin, y=operations_sites, fill=partition), stat="identity", colour="black") + 
     geom_text(aes(label=operations_sites, bin, operations_sites), position="stack", vjust = +1, size=2) + 
     geom_text(aes(0, operations_sites, label=paste("largest bin:\n", "operations: ", operations_sites, "\n", "savings: ", savings, "%", sep=""), group=NULL), data=sumData, vjust=-0.3, hjust=0.1/max(combData$bin), color = "red", size=3) + 
     geom_line(aes(x=bin, y=optimum), color="red", data=rawData) + 
     facet_grid(type~description, scales = "free_y") + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=50, h=10)
+  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=40, h=10)
   
 }
 
