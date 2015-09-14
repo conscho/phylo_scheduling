@@ -1,35 +1,14 @@
 class BinArray
   include Enumerable
   attr_reader :list
-  attr_reader :lower_bound_operations
+  attr_accessor :lower_bound_operations
+  attr_accessor :rounding_adjustment_operations
   attr_reader :lower_bound_sites
-  attr_reader :rounding_adjustment_operations
   attr_reader :rounding_adjustment_sites
 
   def initialize(number_of_bins)
     @list = Array.new(number_of_bins) {Bin.new}
   end
-
-  # Apply heuristic according to the input parameter
-  def apply_heuristic!(heuristic, remaining_partitions)
-    if heuristic == "greedy1"
-      self.greedy1_initial!(remaining_partitions)
-      self.greedy1_fill!(remaining_partitions)
-
-    elsif heuristic == "greedy2"
-      self.greedy2_fill!(remaining_partitions)
-
-    elsif heuristic == "greedy3"
-      self.greedy3_fill!(remaining_partitions)
-
-    elsif heuristic == "slice"
-      self.slice_fill!(remaining_partitions)
-
-    elsif heuristic == "slide"
-      self.slide_fill!(remaining_partitions)
-    end
-  end
-
 
   # Distribute partitions to bins according to the original scheduling algorithm:
   # Fill from small to big without breaking partitions. Stop if a partition doesn't fit anymore.
@@ -148,6 +127,7 @@ class BinArray
     end
   end
 
+
   def greedy3_fill!(remaining_partitions)
     # Initialize index for site selection for each partition in "remaining_partitions"
     partition_indexes = Hash[remaining_partitions.map {|partition| [partition.name, {index: 0, sites: partition.sites.size}]}]
@@ -234,6 +214,10 @@ class BinArray
     end
   end
 
+  def soft_fill(remaining_partitions)
+
+  end
+
   # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
   def original_scheduling!(partitions)
     # Phase 1: Sort partitions by sites.site
@@ -278,14 +262,38 @@ class BinArray
     end
   end
 
-  # Optimize according to the selected algorithm
-  def optimize!(optimization)
-    ## TODO: Empty
+
+
+
+
+  # Get the names of the partitions that are split
+  # @return [array of names]
+  def split_partitions
+    partition_names = @list.map { |bin| bin.partition_names }.flatten
+    partition_names.select {|name| partition_names.index(name) != partition_names.rindex(name)}.uniq
+  end
+
+  # Get bins that have the specified "partition_name" in them
+  # @return [array of bin objects]
+  def bins_with_partition(partition_name)
+    @list.select {|bin| bin.has_partition?(partition_name)}
+  end
+
+  # Set lower bound for operations and sites
+  def set_lower_bound!(partitions)
+    @lower_bound_operations = (partitions.op_optimized_size.to_f / @list.size).ceil
+    @rounding_adjustment_operations = @lower_bound_operations * @list.size - partitions.op_optimized_size
+    @lower_bound_sites = (partitions.total_sites.to_f / @list.size).ceil
+    @rounding_adjustment_sites = @lower_bound_sites * @list.size - partitions.total_sites
   end
 
   # Total operations of all bins
   def size
     @list.map {|bin| bin.size}.reduce(0, :+)
+  end
+
+  def average_bin_size
+    self.size.to_f / @list.size
   end
 
   def update_bin_sizes!
@@ -295,18 +303,9 @@ class BinArray
     self
   end
 
-  # How many sites are there in total over all bins
-  def total_sites
-    @list.map {|bin| bin.total_sites}.reduce(0, :+)
-  end
-
   # Free space compared to the lower bound for each bin
   def free_spaces
     @list.map { |bin| [@lower_bound_operations - bin.size, 0].max }
-  end
-
-  def average_bin_size
-    self.size.to_f / @list.size
   end
 
   # Total free space over all bins compared to the lower bound
@@ -314,12 +313,9 @@ class BinArray
     self.free_spaces.reduce(0, :+)
   end
 
-  # Set lower bound for operations and sites
-  def set_lower_bound!(partitions)
-    @lower_bound_operations = (partitions.op_optimized_size.to_f / @list.size).ceil
-    @rounding_adjustment_operations = @lower_bound_operations * @list.size - partitions.op_optimized_size
-    @lower_bound_sites = (partitions.total_sites.to_f / @list.size).ceil
-    @rounding_adjustment_sites = @lower_bound_sites * @list.size - partitions.total_sites
+  # How many sites are there in total over all bins
+  def total_sites
+    @list.map {|bin| bin.total_sites}.reduce(0, :+)
   end
 
   def to_s(option = "none")

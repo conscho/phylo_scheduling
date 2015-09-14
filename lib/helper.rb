@@ -103,3 +103,83 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
 
   return reduced_number_of_sites, reduced_partitions, reduced_phylip_data, reduced_partition_file, reduced_phylip_file
 end
+
+# Apply heuristic according to the input parameter
+def apply_heuristic(heuristic, optimization_options, bins_master, partitions_master)
+  puts "Applying heuristic #{heuristic}"
+  csv_output = []
+
+  # Get clean data
+  bins = DeepClone.clone bins_master
+  partitions = DeepClone.clone partitions_master
+
+  # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
+  remaining_partitions = bins.initial_fill!(partitions)
+
+  if heuristic.include?("greedy1")
+    bins.greedy1_initial!(remaining_partitions)
+    bins.greedy1_fill!(remaining_partitions)
+    csv_output << bins.to_csv(heuristic)
+
+    # *2 optimization
+    heuristic = "#{heuristic}_*2"
+    average_bin_size = bins.average_bin_size
+
+    # Get clean data
+    bins = DeepClone.clone bins_master
+    partitions = DeepClone.clone partitions_master
+
+    bins.lower_bound_operations = average_bin_size
+    bins.rounding_adjustment_operations = 0
+    remaining_partitions = bins.initial_fill!(partitions)
+    bins.greedy1_initial!(remaining_partitions)
+    bins.greedy1_fill!(remaining_partitions)
+    bins.set_lower_bound!(partitions_master) # Restore original lower_bound
+    csv_output << bins.to_csv(heuristic)
+
+  elsif heuristic.include?("greedy2")
+    bins.greedy2_fill!(remaining_partitions)
+    csv_output << bins.to_csv(heuristic)
+
+  elsif heuristic.include?("greedy3")
+    bins.greedy3_fill!(remaining_partitions)
+    csv_output << bins.to_csv(heuristic)
+
+  elsif heuristic.include?("slice")
+    bins.slice_fill!(remaining_partitions)
+    csv_output << bins.to_csv(heuristic)
+
+  elsif heuristic.include?("slide")
+    bins.slide_fill!(remaining_partitions)
+    csv_output << bins.to_csv(heuristic)
+
+    # *2 optimization
+    heuristic = "#{heuristic}_*2"
+    average_bin_size = bins.average_bin_size
+
+    # Get clean data
+    bins = DeepClone.clone bins_master
+    partitions = DeepClone.clone partitions_master
+
+    bins.lower_bound_operations = average_bin_size
+    bins.rounding_adjustment_operations = 0
+    remaining_partitions = bins.initial_fill!(partitions)
+    bins.slide_fill!(remaining_partitions)
+    bins.set_lower_bound!(partitions_master) # Restore original lower_bound
+    csv_output << bins.to_csv(heuristic)
+
+  elsif heuristic.include?("soft_hard")
+    bins.soft_fill(remaining_partitions)
+    csv_output << bins.to_csv(heuristic)
+  end
+
+  # Apply optimization
+  optimization_options.each do |optimization|
+    csv_output << apply_optimization(bins, partitions, heuristic, optimization)
+  end
+
+  csv_output
+end
+
+def apply_optimization(bins, partitions, heuristic, optimization)
+end
