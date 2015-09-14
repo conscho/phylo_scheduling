@@ -182,4 +182,37 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 end
 
 def apply_optimization(bins, partitions, heuristic, optimization)
+  if optimization == "low_dependencies"
+    # Get split partitions.
+    # Get site dependencies.
+    # Get sites with bottom 10% dependencies_count.
+    # Recalculate operations
+    # Simulate insert into bins below lower bound. If multiple operations minima, choose the bin with fewest operations.
+  elsif optimization == "reduce_max"
+    bins.list.size.times do
+      max_bin = bins.max
+
+      # Get split partitions in the largest bin
+      max_bin.find_partitions(bins.split_partitions).each do |partition|
+        # Get sites and their dependency count
+        site_dependencies = partition.get_site_dependencies_count
+
+        # Get other bins that have the same split partition
+        bins.bins_with_partition(partition.name).sort.each do |bin|
+          next if bins.average_bin_size < bin.size
+
+          # Get number of sites that should be moved based on operations worst case
+          n = ((bins.average_bin_size - bin.size).to_f / partition.op_maximum_per_site).ceil
+
+          # Move n (min dependencies) sites to that bin
+          min_sites = Hash[site_dependencies.min_by(n) {|site, count| count}].keys
+          min_sites.each {|site| site_dependencies.delete(site)}
+          partition.delete_specific_sites!(min_sites)
+          bin.list[partition.name].incr_add_sites!(min_sites)
+        end
+      end
+      bins.update_bin_sizes!
+    end
+  end
+  bins.to_csv("#{heuristic}_#{optimization}")
 end

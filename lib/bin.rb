@@ -46,6 +46,24 @@ class Bin
     self
   end
 
+  def partition_names
+    @list.keys
+  end
+
+  # Returns the partitions that match the given names "partitions"
+  def find_partitions(partitions)
+    partitions.map { |partition_name| @list[partition_name] }.compact
+  end
+
+  # Does the bin have the given partition name in it?
+  def has_partition?(partition_name)
+    if @list.keys.include?(partition_name)
+      true
+    else
+      false
+    end
+  end
+
   def total_sites
     if @list.empty?
       0

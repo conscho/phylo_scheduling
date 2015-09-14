@@ -42,6 +42,15 @@ class Partition
     @op_optimized
   end
 
+  def get_site_dependencies_count
+    dependencies_count = @tree.get_site_dependencies[:dependencies_count]
+    @sites.map {|site| [site, 0]}.to_h.merge(dependencies_count)
+  end
+
+  def op_maximum_per_site
+    @op_maximum / @sites.size
+  end
+
   def incr_add_sites!(sites, simulate = false)
     result = @tree.ml_operations!(sites, false, simulate)
     unless simulate
@@ -77,9 +86,15 @@ class Partition
   # Delete sites without updating sizes.
   # @return [Array of dropped sites]
   def delete_sites!(n)
-    dropped_sites = @sites.first(n)
+    deleted_sites = @sites.first(n)
     @sites = @sites.drop(n)
-    dropped_sites
+    deleted_sites
+  end
+
+  # Delete given sites from partition and update size
+  def delete_specific_sites!(sites)
+    sites.each { |site| @sites.delete(site) }
+    self.ml_operations!
   end
 
   def drop_random_site!
