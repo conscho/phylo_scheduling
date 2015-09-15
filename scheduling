@@ -24,7 +24,7 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => "-l",
          :desc => "Path to phylip file " \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 6, :aliases => "-n",
+  option :number_of_bins, :type => :numeric, :default => 3, :aliases => "-n",
          :desc => "Number of bins that the sites should be distributed to. " \
                   "Example: '-n 3' "
 
@@ -34,8 +34,8 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ["slide", "greedy1", "greedy2", "greedy3", "slice"]
-    optimization_options = ["reduce_max"]
+    heuristic_options = ["slide", "grdy1", "grdy2", "grdy3", "slice"]
+    optimization_options = ["low_dep", "red_max"]
     csv_output = []
     start_time = Time.now
     partitions_master = PartitionArray.from_file(partition_file)
@@ -72,6 +72,7 @@ class Scheduling < Thor
 
     # Set lower bound for heuristics
     bins_master.set_lower_bound!(partitions_master)
+    bins_master.set_operations_worst_case!(partitions_master)
 
 
     ## Original scheduling as reference ##
@@ -96,7 +97,7 @@ class Scheduling < Thor
     partitions_master.add_tree!(tree_master, false)
 
     heuristic_options.each do |heuristic|
-      csv_output << apply_heuristic("#{heuristic}_lexi", optimization_options, bins_master, partitions_master)
+      csv_output << apply_heuristic("#{heuristic}_lxi", optimization_options, bins_master, partitions_master)
     end
 
 

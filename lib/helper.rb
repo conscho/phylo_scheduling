@@ -116,32 +116,43 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
   # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
   remaining_partitions = bins.initial_fill!(partitions)
 
-  if heuristic.include?("greedy1")
+  if heuristic.include?("grdy1")
     bins.greedy1_initial!(remaining_partitions)
     bins.greedy1_fill!(remaining_partitions)
     csv_output << bins.to_csv(heuristic)
 
-    # *2 optimization
+    #####################
+    ## *2 optimization ##
+    #####################
+
     heuristic = "#{heuristic}_*2"
+    puts "Applying heuristic #{heuristic}"
     average_bin_size = bins.average_bin_size
 
     # Get clean data
     bins = DeepClone.clone bins_master
     partitions = DeepClone.clone partitions_master
 
-    bins.lower_bound_operations = average_bin_size
-    bins.rounding_adjustment_operations = 0
+    backup_lower_bound = bins.operations_lower_bound
+    backup_rounding_adjustment = bins.operations_rounding_adjustment
+    bins.operations_lower_bound = average_bin_size
+    bins.operations_rounding_adjustment = 0
+
     remaining_partitions = bins.initial_fill!(partitions)
     bins.greedy1_initial!(remaining_partitions)
     bins.greedy1_fill!(remaining_partitions)
-    bins.set_lower_bound!(partitions_master) # Restore original lower_bound
+
+    # Restore original lower_bound
+    bins.operations_lower_bound = backup_lower_bound
+    bins.operations_rounding_adjustment = backup_rounding_adjustment
+
     csv_output << bins.to_csv(heuristic)
 
-  elsif heuristic.include?("greedy2")
+  elsif heuristic.include?("grdy2")
     bins.greedy2_fill!(remaining_partitions)
     csv_output << bins.to_csv(heuristic)
 
-  elsif heuristic.include?("greedy3")
+  elsif heuristic.include?("grdy3")
     bins.greedy3_fill!(remaining_partitions)
     csv_output << bins.to_csv(heuristic)
 
@@ -155,17 +166,25 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 
     # *2 optimization
     heuristic = "#{heuristic}_*2"
+    puts "Applying heuristic #{heuristic}"
     average_bin_size = bins.average_bin_size
 
     # Get clean data
     bins = DeepClone.clone bins_master
     partitions = DeepClone.clone partitions_master
 
-    bins.lower_bound_operations = average_bin_size
-    bins.rounding_adjustment_operations = 0
+    backup_lower_bound = bins.operations_lower_bound
+    backup_rounding_adjustment = bins.operations_rounding_adjustment
+    bins.operations_lower_bound = average_bin_size
+    bins.operations_rounding_adjustment = 0
+
     remaining_partitions = bins.initial_fill!(partitions)
     bins.slide_fill!(remaining_partitions)
-    bins.set_lower_bound!(partitions_master) # Restore original lower_bound
+
+    # Restore original lower_bound
+    bins.operations_lower_bound = backup_lower_bound
+    bins.operations_rounding_adjustment = backup_rounding_adjustment
+
     csv_output << bins.to_csv(heuristic)
 
   elsif heuristic.include?("soft_hard")
@@ -182,18 +201,35 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 end
 
 def apply_optimization(bins, partitions, heuristic, optimization)
-  if optimization == "low_dependencies"
-    # Get split partitions.
-    # Get site dependencies.
-    # Get sites with bottom 10% dependencies_count.
-    # Recalculate operations
-    # Simulate insert into bins below lower bound. If multiple operations minima, choose the bin with fewest operations.
-  elsif optimization == "reduce_max"
+  if optimization == "low_dep"
+    partitions_for_redistribution = []
+    # Get split partitions
+    split_partition_names = bins.split_partitions
+
+    bins.each do |bin|
+      # Get split partitions per bin
+      bin.find_partitions(split_partition_names).each do |split_partition|
+        # Get bottom 10% sites sorted by dependencies count
+        site_dependencies = split_partition.get_site_dependencies_count
+        min_sites = Hash[site_dependencies.min_by(site_dependencies.size / 10) {|site, count| count}].keys
+        partitions_for_redistribution << split_partition.delete_specific_sites!(min_sites, true)
+      end
+    end
+    # Define current bins average as lower bound
+    backup_lower_bound = bins.operations_lower_bound
+    bins.operations_lower_bound = bins.average_bin_size
+    # Execute greedy 1
+    bins.greedy1_fill!(partitions_for_redistribution)
+    bins.operations_lower_bound = backup_lower_bound
+
+  elsif optimization == "red_max"
+    split_partition_names = bins.split_partitions
+
     bins.list.size.times do
       max_bin = bins.max
 
       # Get split partitions in the largest bin
-      max_bin.find_partitions(bins.split_partitions).each do |partition|
+      max_bin.find_partitions(split_partition_names).each do |partition|
         # Get sites and their dependency count
         site_dependencies = partition.get_site_dependencies_count
 
@@ -202,7 +238,7 @@ def apply_optimization(bins, partitions, heuristic, optimization)
           next if bins.average_bin_size < bin.size
 
           # Get number of sites that should be moved based on operations worst case
-          n = ((bins.average_bin_size - bin.size).to_f / partition.op_maximum_per_site).ceil
+          n = ((bins.average_bin_size - bin.size).to_f / bins.operations_worst_case).ceil
 
           # Move n (min dependencies) sites to that bin
           min_sites = Hash[site_dependencies.min_by(n) {|site, count| count}].keys

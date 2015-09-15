@@ -1,10 +1,11 @@
 class BinArray
   include Enumerable
   attr_reader :list
-  attr_accessor :lower_bound_operations
-  attr_accessor :rounding_adjustment_operations
-  attr_reader :lower_bound_sites
-  attr_reader :rounding_adjustment_sites
+  attr_accessor :operations_lower_bound
+  attr_accessor :operations_rounding_adjustment
+  attr_reader :sites_lower_bound
+  attr_reader :sites_rounding_adjustment
+  attr_reader :operations_worst_case
 
   def initialize(number_of_bins)
     @list = Array.new(number_of_bins) {Bin.new}
@@ -17,14 +18,14 @@ class BinArray
     bin_index = 0
     full_bins = 0
     partitions.size.times do
-      if @list[bin_index].size + partitions.first.size <= @lower_bound_operations
+      if @list[bin_index].size + partitions.first.size <= @operations_lower_bound
         @list[bin_index].add!([partitions.first])
         partitions.drop!(1)
 
         # Edge case handling for perfect fit
-        if @list[bin_index].size == @lower_bound_operations
+        if @list[bin_index].size == @operations_lower_bound
           full_bins += 1
-          @lower_bound_operations -= 1 if full_bins == @list.size - @rounding_adjustment_operations
+          @operations_lower_bound -= 1 if full_bins == @list.size - @operations_rounding_adjustment
         end
 
       else
@@ -44,13 +45,15 @@ class BinArray
     site_index = 0
     partition_index = 0
     total_sites_remaining = remaining_partitions.total_sites
+    return if total_sites_remaining == 0 # If remaining_partition is empty return instantly
+
     total_free_space = self.total_free_space
 
     # Fill each bin starting with the least filled
     self.sort.each_with_index do |bin, bin_index|
 
       # How many sites need to go into the current bin
-      sites_for_bin = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_sites_remaining).floor
+      sites_for_bin = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_sites_remaining).floor
 
       # Pick (random) site of partition, add to bin and drop from "remaining_partitions"
       dropped_partition = remaining_partitions.list.values[partition_index].drop_random_site!
@@ -86,13 +89,13 @@ class BinArray
         self.each_with_index do |bin, bin_index|
           target_partition = bin.list[src_partition.name]
           if target_partition.nil?
-            # Simulate creation of partition in current bin since partition does not exist yet
-            operations = Float::INFINITY
+            # Creating a new partition is more costly than the worst case
+            operations = @operations_worst_case + 1
           else
             # Simulate insertion of site into existing partition of current bin
             operations = target_partition.incr_add_sites!([site], true)
             # Find out if bin.size is already larger than the lower bound, then make the operation more costly
-            operations = (operations + 100) * 100 if bin.update_size!.size > @lower_bound_operations # FIXME: Very hacky
+            operations = (operations + 100) * 100 if bin.update_size!.size > @operations_lower_bound # FIXME: Very hacky
           end
           simulation_result.merge!({operations => bin_index})
         end
@@ -187,7 +190,7 @@ class BinArray
       total_free_space = self.total_free_space
 
       # How many operations need to go into the current bin
-      operations_for_bin = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_operations_remaining).ceil
+      operations_for_bin = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_operations_remaining).ceil
 
       # Fill sites that add up to "operations_for_bin" taken from "remaining_partitions" into the bin.
       # The rest stays in "remaining_partitions".
@@ -206,7 +209,7 @@ class BinArray
     self.sort.each do |bin|
 
       # How many sites need to go into the current bin
-      number_of_sites = ((@lower_bound_operations - bin.size).to_f / total_free_space * total_sites_remaining).ceil # FIXME: It's probably better to round down and save overflow in last bin
+      number_of_sites = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_sites_remaining).ceil # FIXME: It's probably better to round down and save overflow in last bin
 
       # Fill "number_of_sites" sites taken from "remaining_partitions" into the bin. The rest stays in "remaining_partitions"
       dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
@@ -227,14 +230,14 @@ class BinArray
     bin_assigner = 0
     full_bins = 0
     partitions.size.times do
-      if @list[bin_assigner].total_sites + partitions.first.sites.size <= @lower_bound_sites
+      if @list[bin_assigner].total_sites + partitions.first.sites.size <= @sites_lower_bound
         @list[bin_assigner].add!([partitions.first])
         partitions.drop!(1)
 
         # Edge case handling for perfect fit
-        if @list[bin_assigner].total_sites == @lower_bound_sites
+        if @list[bin_assigner].total_sites == @sites_lower_bound
           full_bins += 1
-          @lower_bound_sites -= 1 if full_bins == @list.size - @rounding_adjustment_sites
+          @sites_lower_bound -= 1 if full_bins == @list.size - @sites_rounding_adjustment
         end
 
       else
@@ -249,7 +252,7 @@ class BinArray
     self.sort_by {|bin| bin.total_sites}.each do |bin|
 
       # How many sites need to go into the current bin
-      number_of_sites = @lower_bound_sites - bin.total_sites
+      number_of_sites = @sites_lower_bound - bin.total_sites
 
       # Fill the "remaining_partitions" into the bin until the bin is full. Then return the rest.
       dropped_partitions = partitions.drop_sites!(number_of_sites)
@@ -257,7 +260,7 @@ class BinArray
 
       # Exact fit
       full_bins += 1
-      @lower_bound_sites -= 1 if full_bins == @list.size - @rounding_adjustment_sites
+      @sites_lower_bound -= 1 if full_bins == @list.size - @sites_rounding_adjustment
 
     end
   end
@@ -281,10 +284,14 @@ class BinArray
 
   # Set lower bound for operations and sites
   def set_lower_bound!(partitions)
-    @lower_bound_operations = (partitions.op_optimized_size.to_f / @list.size).ceil
-    @rounding_adjustment_operations = @lower_bound_operations * @list.size - partitions.op_optimized_size
-    @lower_bound_sites = (partitions.total_sites.to_f / @list.size).ceil
-    @rounding_adjustment_sites = @lower_bound_sites * @list.size - partitions.total_sites
+    @operations_lower_bound = (partitions.op_optimized_size.to_f / @list.size).ceil
+    @operations_rounding_adjustment = @operations_lower_bound * @list.size - partitions.op_optimized_size
+    @sites_lower_bound = (partitions.total_sites.to_f / @list.size).ceil
+    @sites_rounding_adjustment = @sites_lower_bound * @list.size - partitions.total_sites
+  end
+
+  def set_operations_worst_case!(partitions)
+    @operations_worst_case = partitions.list.values[0].op_maximum_per_site
   end
 
   # Total operations of all bins
@@ -305,7 +312,7 @@ class BinArray
 
   # Free space compared to the lower bound for each bin
   def free_spaces
-    @list.map { |bin| [@lower_bound_operations - bin.size, 0].max }
+    @list.map { |bin| [@operations_lower_bound - bin.size, 0].max }
   end
 
   # Total free space over all bins compared to the lower bound
@@ -330,7 +337,7 @@ class BinArray
 
   def to_csv(description)
     # Iterate over all partitions and add up operations for this bin
-    self.each_with_index.map {|bin, bin_index| bin.to_csv({description: description, bin: bin_index, optimum: @lower_bound_operations}) }.flatten
+    self.each_with_index.map {|bin, bin_index| bin.to_csv({description: description, bin: bin_index, optimum: @operations_lower_bound}) }.flatten
   end
 
   def each(&block)

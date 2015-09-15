@@ -91,10 +91,13 @@ class Partition
     deleted_sites
   end
 
-  # Delete given sites from partition and update size
-  def delete_specific_sites!(sites)
+  # Delete given sites from partition and update size.
+  # @param [Array of sites] sites
+  # @param [Boolean] return_partition
+  def delete_specific_sites!(sites, return_partition = false)
     sites.each { |site| @sites.delete(site) }
     self.ml_operations!
+    Partition.new(@name, sites, @tree, compute = false) if return_partition
   end
 
   def drop_random_site!
