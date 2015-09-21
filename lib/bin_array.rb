@@ -217,9 +217,7 @@ class BinArray
     end
   end
 
-  def soft_fill(remaining_partitions)
 
-  end
 
   # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
   def original_scheduling_initial!(partitions)

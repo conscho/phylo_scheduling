@@ -123,7 +123,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
   # Save individual copies of tree for each partition
   remaining_partitions.add_tree!(tree_master)
 
-  if heuristic.include?('orig_sched')
+  if heuristic.include?('orig-sched')
     bins.original_scheduling_fill!(remaining_partitions)
     optimization_options = []
 
@@ -145,8 +145,6 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
     bins.slide_fill!(remaining_partitions)
     optimization_options = Array.new(optimization_options).push('*2')
 
-  elsif heuristic.include?('soft_hard')
-    bins.soft_fill(remaining_partitions)
   end
 
   csv_output << bins.to_csv(heuristic)
@@ -164,7 +162,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
   puts "Applying optimization #{optimization} for #{heuristic}"
 
 
-  if optimization == 'low_dep'
+  if optimization == 'low-dep'
 
     #StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
 
@@ -192,7 +190,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     #end
 
-  elsif optimization == 'red_max'
+  elsif optimization == 'red-max'
     split_partition_names = bins.split_partitions
 
     bins.list.size.times do
@@ -249,7 +247,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
 
     # Apply further optimizations on top
-    ['low_dep', 'red_max'].each do |further_optimization|
+    ['low-dep', 'red-max'].each do |further_optimization|
       csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", further_optimization)
     end
 

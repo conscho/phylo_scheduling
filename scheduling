@@ -35,8 +35,8 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ['orig_sched', 'slice', 'grdy1', 'grdy2', 'grdy3', 'slide']
-    optimization_options = ['low_dep', 'red_max']
+    heuristic_options = ['orig-sched', 'slice', 'grdy1', 'grdy2', 'grdy3', 'slide']
+    optimization_options = ['low-dep', 'red-max']
     csv_output = []
     start_time = Time.now
     partitions_master = PartitionArray.from_file(partition_file)
