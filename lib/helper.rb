@@ -158,13 +158,13 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 end
 
 def apply_optimization(bins, bins_master, partitions_master, tree_master, heuristic, optimization)
-  csv_output = []
   puts "Applying optimization #{optimization} for #{heuristic}"
-
+  csv_output = []
 
   if optimization == 'low-dep'
 
     #StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
+    bins = DeepClone.clone bins
 
       partitions_for_redistribution = []
       # Get split partitions
@@ -188,9 +188,13 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
       csv_output << bins.to_csv("#{heuristic}_#{optimization}")
 
+    csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", 'red-max')
+
     #end
 
   elsif optimization == 'red-max'
+    bins = DeepClone.clone bins
+
     split_partition_names = bins.split_partitions
 
     bins.list.size.times do
