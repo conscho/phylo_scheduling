@@ -546,15 +546,17 @@ class NewickTree
   end
 
 
-  def get_site_dependencies
-    dependencies = @root.dependencies_per_subtree
-
-    edges = dependencies.map {|sev| sev.combination(2).to_a }.
-        flatten(1).each_with_object(Hash.new(0)) {|dependency, count| count[dependency] += 1}
-    dependencies_count = dependencies.flatten.each_with_object(Hash.new(0)) {|site, count| count[site] += 1}
-
-    return {dependencies_count: dependencies_count, edges: edges}
+  # How many dependencies does each site have
+  def site_dependencies_count
+    @root.dependencies_per_subtree.flatten.each_with_object(Hash.new(0)) {|site, count| count[site] += 1}
   end
+
+  # To which sites does each site have a dependency
+  def site_dependencies_edges
+    @root.dependencies_per_subtree.map {|sev| sev.combination(2).to_a }.
+        flatten(1).each_with_object(Hash.new(0)) {|dependency, count| count[dependency] += 1}
+  end
+
 
   # set edgeLen of all nodes of the tree to 1 if there were no edgeLen in newick file. Required for midpointRoot
   def set_edge_length!

@@ -73,10 +73,9 @@ class SiteDependencies < Thor
     partition = partition.crop(options[:crop_sites]) if options[:crop_sites] < partition.sites.size
 
     tree.ml_operations!(partition.sites)
-    site_dependencies_data = tree.get_site_dependencies
 
     # Edges for the site dependency graph
-    site_dependencies_data[:edges].each do |key, value|
+    tree.site_dependencies_edges.each do |key, value|
       csv_output << { from: key[0], to: key[1], weight: value}
     end
 

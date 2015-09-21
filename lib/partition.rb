@@ -43,7 +43,7 @@ class Partition
   end
 
   def get_site_dependencies_count
-    dependencies_count = @tree.get_site_dependencies[:dependencies_count]
+    dependencies_count = @tree.site_dependencies_count
     @sites.map {|site| [site, 0]}.to_h.merge(dependencies_count)
   end
 

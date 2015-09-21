@@ -78,13 +78,13 @@ class SiteDependencies < Thor
 
           result = tree.ml_operations!(partition.sites)
 
-          site_dependencies_data = tree.get_site_dependencies
+          site_dependencies_data = tree.site_dependencies_count
 
           # If a site has zero dependencies it will not be present in the hash, but still return 0 since we initialized the Hash with the value 0.
           # That's why we iterate over all sites of the partition_range instead of all elements of site_dependencies_data[:dependencies_count].
           partition.sites.each do |site_index|
             csv_output << {batch: batch_name, tree: file, partition: partition.name,
-                            site: site_index, count: site_dependencies_data[:dependencies_count][site_index]}
+                            site: site_index, count: site_dependencies_data[site_index]}
           end
 
         end
