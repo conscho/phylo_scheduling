@@ -11,10 +11,10 @@ class BinArray
     @list = Array.new(number_of_bins) {Bin.new}
   end
 
-  # Distribute partitions to bins according to the original scheduling algorithm:
+  # Distribute partitions to bins similar like the original scheduling algorithm:
   # Fill from small to big without breaking partitions. Stop if a partition doesn't fit anymore.
   # @return [partitions] Remaining partitions that did not feet into the bins.
-  def initial_fill!(partitions)
+  def adapted_scheduling_initial!(partitions)
     bin_index = 0
     full_bins = 0
     partitions.size.times do
@@ -222,8 +222,8 @@ class BinArray
   end
 
   # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
-  def original_scheduling!(partitions)
-    # Phase 1: Sort partitions by sites.site
+  def original_scheduling_initial!(partitions)
+    # Phase 1: Sort partitions by sites.size
     partitions.sort_by_sites!
 
     # Phase 2: Initial filling
@@ -246,16 +246,20 @@ class BinArray
 
       bin_assigner = (bin_assigner + 1) % @list.size
     end
+    partitions
+  end
 
+  def original_scheduling_fill!(remaining_partitions)
     # Phase 3: Partitioning
     # Fill each bin starting with the least filled
+    full_bins = 0 # FIXME: Sloppy implementation. Should get value from initial.
     self.sort_by {|bin| bin.total_sites}.each do |bin|
 
       # How many sites need to go into the current bin
       number_of_sites = @sites_lower_bound - bin.total_sites
 
       # Fill the "remaining_partitions" into the bin until the bin is full. Then return the rest.
-      dropped_partitions = partitions.drop_sites!(number_of_sites)
+      dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
       bin.add!(dropped_partitions)
 
       # Exact fit

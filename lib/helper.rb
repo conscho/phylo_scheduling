@@ -6,7 +6,7 @@ def read_likelihood(batches)
   batches.each do |batch_name, batch_path|
     subfolder_to_visit = /(?<subfolder>.*\/)/.match(batch_path)[:subfolder]
 
-    Dir.glob(subfolder_to_visit + "RAxML_info*") do |file|
+    Dir.glob(subfolder_to_visit + 'RAxML_info*') do |file|
 
       likelihoods_tree_prefix = /RAxML_info.(?<prefix>.*)/.match(file)[:prefix]
 
@@ -38,7 +38,7 @@ def read_phylip(file_name)
 
   in_file = File.new(file_name)
   in_file.each_with_index do |line, index|
-    input = line.strip.split(" ")
+    input = line.strip.split(' ')
 
     if index == 0 # information from first line of file
       number_of_taxa = input[0].to_i
@@ -47,8 +47,8 @@ def read_phylip(file_name)
     end
 
     if index > number_of_taxa
-      if line.strip != ""
-        raise "Warning: Non empty line with index > number_of_leaves found in phylip file!"
+      if line.strip != ''
+        raise 'Warning: Non empty line with index > number_of_leaves found in phylip file!'
       end
       next
     end
