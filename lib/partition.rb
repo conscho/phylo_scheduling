@@ -11,6 +11,9 @@ class Partition
   def initialize(name, sites, tree = nil, compute = true)
     @name = name
     @sites = sites
+    @op_maximum = 0
+    @op_optimized = 0
+    @op_savings = 0
     if !tree.nil?
       @tree = DeepClone.clone tree
       self.ml_operations! if compute
@@ -26,15 +29,20 @@ class Partition
 
   # Have the ML operations already been calculated?
   def calculated?
-    if !@op_optimized.nil?
-      true
-    else
+    if @op_optimized == 0
       false
+    else
+      true
     end
   end
 
-  def ml_operations!
-    result = @tree.ml_operations!(@sites)
+  # ML operations based on saved tree or given tree
+  def ml_operations!(tree = nil)
+    result = if tree.nil?
+               @tree.ml_operations!(@sites)
+             else
+               tree.ml_operations!(@sites)
+             end
     @op_maximum = result[:op_maximum]
     @op_optimized = result[:op_optimized]
     @op_savings = result[:op_savings]

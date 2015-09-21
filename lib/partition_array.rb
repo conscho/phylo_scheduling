@@ -20,6 +20,14 @@ class PartitionArray
     return PartitionArray.new(partitions_hash)
   end
 
+  # Calculate ML operations for given tree for all partitions
+  def ml_operations!(tree)
+    @list.each_value do |partition|
+      partition.ml_operations!(tree)
+    end
+    self
+  end
+
   # Add tree to each partition and calculate operations
   def add_tree!(tree, compute = true)
     @list.each_value do |partition|
