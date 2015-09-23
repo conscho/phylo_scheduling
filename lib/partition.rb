@@ -59,6 +59,17 @@ class Partition
     @op_maximum / @sites.size
   end
 
+  # Merge another partition into this one.
+  # @return [Integer] How many operations the merge adds to the partition
+  def merge!(partition, simulate = false, dirty = false)
+    if dirty
+      self.dirty_add_sites!(partition.sites)
+    else
+      self.incr_add_sites!(partition.sites, simulate)
+    end
+  end
+
+  # Add sites to partition and calculate the operations.
   def incr_add_sites!(sites, simulate = false)
     result = @tree.ml_operations!(sites, false, simulate)
     unless simulate
@@ -70,10 +81,10 @@ class Partition
     result[:op_optimized]
   end
 
-  # Merge another partition into this one.
-  # @return [Integer] How many operations the merge adds to the partition
-  def merge!(partition, simulate = false)
-    self.incr_add_sites!(partition.sites, simulate)
+  # Just add sites don't update tree or operations
+  def dirty_add_sites!(sites)
+    @sites.push(sites).flatten!
+    0
   end
 
   # Drop sites in the beginning of partition

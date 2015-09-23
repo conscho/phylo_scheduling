@@ -35,7 +35,7 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ['orig-sched', 'slice', 'grdy1', 'grdy2', 'grdy3', 'slide']
+    heuristic_options = ['orig-sched', 'slide', 'grdy1', 'grdy2', 'grdy3', 'slice']
     optimization_options = ['low-dep', 'red-max']
     csv_output = []
     start_time = Time.now
@@ -88,7 +88,7 @@ class Scheduling < Thor
     tree_master.sort_sites!(partitions_master)
     partitions_master.add_tree!(tree_master, false)
     # Don't apply original scheduling when doing lexicographic sort
-    heuristic_options.delete('orig_sched')
+    heuristic_options.delete('orig-sched')
 
 
     heuristic_options.each do |heuristic|

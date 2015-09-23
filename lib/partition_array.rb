@@ -2,7 +2,7 @@ class PartitionArray
   include Enumerable
   attr_reader :list
 
-  def initialize(partitions_hash)
+  def initialize(partitions_hash = {})
     @list = {}
     partitions_hash.each do |partition_name, partition_sites|
       @list[partition_name] = Partition.new(partition_name, partition_sites)
@@ -63,8 +63,13 @@ class PartitionArray
     @list.delete_if {|partition_name, partition| partition.sites.size == 0}
   end
 
-  def add!(partition)
-    @list[partition.name] = partition
+  # Add partition or extend existing partition if already exists
+  def add!(partition, dirty = false)
+    if @list[partition.name].nil?
+      @list[partition.name] = partition
+    else
+      @list[partition.name].merge!(partition, simulate = false, dirty)
+    end
     self
   end
 

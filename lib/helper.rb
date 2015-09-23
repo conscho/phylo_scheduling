@@ -163,10 +163,9 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
   if optimization == 'low-dep'
 
-    #StackProf.run(mode: :cpu, out: 'stackprof-output.dump') do
     bins = DeepClone.clone bins
 
-      partitions_for_redistribution = []
+      partitions_for_redistribution = PartitionArray.new()
       # Get split partitions
       split_partition_names = bins.split_partitions
 
@@ -176,7 +175,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
           # Get bottom 10% sites sorted by dependencies count
           site_dependencies = split_partition.get_site_dependencies_count
           min_sites = Hash[site_dependencies.min_by(site_dependencies.size / 10) {|site, count| count}].keys
-          partitions_for_redistribution << split_partition.delete_specific_sites!(min_sites, true)
+          partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
         end
       end
       # Define current bins average as lower bound
@@ -190,7 +189,6 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", 'red-max')
 
-    #end
 
   elsif optimization == 'red-max'
     bins = DeepClone.clone bins
@@ -237,11 +235,15 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
     bins.operations_lower_bound = average_bin_size
     bins.operations_rounding_adjustment = 0
 
-    # Run optimization/greedy1
+    # Rerun respective heuristic
     remaining_partitions = bins.adapted_scheduling_initial!(partitions)
     remaining_partitions.add_tree!(tree_master)
-    bins.greedy1_initial!(remaining_partitions)
-    bins.greedy1_fill!(remaining_partitions)
+    if heuristic.include?('grdy1')
+      bins.greedy1_initial!(remaining_partitions)
+      bins.greedy1_fill!(remaining_partitions)
+    elsif heuristic.include?('slide')
+      bins.slide_fill!(remaining_partitions)
+    end
 
     # Restore original lower_bound
     bins.operations_lower_bound = backup_lower_bound
@@ -256,7 +258,6 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
     end
 
   end
-
 
 
   csv_output
