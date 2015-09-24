@@ -36,6 +36,11 @@ class Partition
     end
   end
 
+  # Any sites left in this partition
+  def empty?
+    @sites.empty?
+  end
+
   # Update operations for partition
   def ml_operations!
     result = @tree.ml_operations!(@sites)

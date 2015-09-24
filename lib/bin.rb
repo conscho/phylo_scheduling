@@ -24,6 +24,11 @@ class Bin
     self
   end
 
+  # Delete specific partition from bin.
+  def delete!(partition)
+    @list.delete(partition.name)
+  end
+
   # Simulate adding (array of) partitions to this bin. Merge with existing partitions if they exist.
   # @return [Integer] Operations that would be added to the bin if you add these partitions
   def simulate_add(partitions)
