@@ -123,7 +123,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 
   if heuristic.include?('orig-sched')
     bins.original_scheduling_fill!(remaining_partitions)
-    optimization_options = []
+    optimization_options = [] # Don't run optimization for the original scheduling algorithm
 
   elsif heuristic.include?('grdy1')
     bins.greedy1_initial!(remaining_partitions)
@@ -160,7 +160,6 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
   csv_output = []
 
   if optimization == 'low-dep'
-
     bins = DeepClone.clone bins
 
       partitions_for_redistribution = PartitionArray.new()

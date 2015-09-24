@@ -54,7 +54,7 @@ for (parameter.file in files) {
     geom_line(aes(x=bin, y=optimum), color="red", data=rawData) + 
     facet_grid(type~description, scales = "free_y") + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=70, h=10, limitsize=FALSE)
+  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=90, h=10, limitsize=FALSE)
   
 }
 

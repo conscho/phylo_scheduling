@@ -59,7 +59,7 @@ class Partition
   # @return [Integer] How many operations the merge adds to the partition
   def merge!(partition, simulate = false, dirty = false)
     if dirty
-      self.dirty_add_sites!(partition.sites)
+      self.add_sites!(partition.sites)
     else
       self.incr_add_sites!(partition.sites, simulate)
     end
@@ -85,7 +85,7 @@ class Partition
   end
 
   # Just add sites don't update tree or operations
-  def dirty_add_sites!(sites)
+  def add_sites!(sites)
     @sites.push(sites).flatten!
     0
   end
@@ -98,14 +98,14 @@ class Partition
     Partition.new(@name, dropped_sites, @tree, compute)
   end
 
-  # Drop sites in the beginning of partition
+  # Drop sites in the beginning of partition without updating operations
   # @return [Partition] partition with those dropped sites
   def drop_sites(n, compute = true)
     dropped_sites = @sites.first(n)
     Partition.new(@name, dropped_sites, @tree, compute)
   end
 
-  # Delete sites without updating sizes.
+  # Delete sites without updating operations.
   # @return [Array of dropped sites]
   def delete_sites!(n)
     deleted_sites = @sites.first(n)
@@ -122,25 +122,16 @@ class Partition
     Partition.new(@name, sites, @tree, compute = false) if return_partition
   end
 
+  # Delete random site in partition without updating operations
   def drop_random_site!
     dropped_site = @sites.sample
     @sites.delete(dropped_site)
     return Partition.new(@name, [dropped_site], @tree)
   end
 
-  # Delete site from partition and return it
-  def slice!(position)
-    @sites.slice!(position)
-  end
-
-  # Add site to the end
-  def push!(site)
-    @sites = @sites.push(site)
-  end
-
-  # Add site to the beginning
-  def unshift!(site)
-    @sites = @sites.unshift(site)
+  # Delete site with given index from partition and return it
+  def slice!(index)
+    @sites.slice!(index)
   end
 
   # Return new partition containing only {number} sites
