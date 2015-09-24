@@ -204,7 +204,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
         site_dependencies = partition.get_site_dependencies_count
 
         # Get other bins that have the same split partition
-        bins.bins_with_partition(partition.name).sort.each do |bin|
+        bins.sort.each do |bin|
           next if bins.average_bin_size < bin.size
 
           # Get number of sites that should be moved based on operations worst case
@@ -214,7 +214,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
           min_sites = Hash[site_dependencies.min_by(n) {|site, count| count}].keys
           min_sites.each {|site| site_dependencies.delete(site)}
           partition.delete_specific_sites!(min_sites)
-          bin.list[partition.name].incr_add_sites!(min_sites)
+          bin.add!([Partition.new(partition.name, min_sites, partition.tree, compute = false)])
         end
       end
       bins.update_bin_sizes!
