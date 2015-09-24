@@ -171,7 +171,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
         bin.find_partitions(split_partition_names).each do |split_partition|
           # Get bottom 10% sites sorted by dependencies count
           site_dependencies = split_partition.get_site_dependencies_count
-          min_sites = Hash[site_dependencies.min_by(site_dependencies.size / 10) {|site, count| count}].keys
+          min_sites = Hash[site_dependencies.min_by(site_dependencies.size / 5) {|site, count| count}].keys
           partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
         end
       end
@@ -205,7 +205,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
           next if bins.average_bin_size < bin.size
 
           # Get number of sites that should be moved based on operations worst case
-          n = ((bins.average_bin_size - bin.size).to_f / bins.operations_worst_case).ceil
+          n = ((bins.average_bin_size - bin.size).to_f / bins.operations_worst_case).floor
 
           # Move n sites with minimum dependencies to that bin
           min_sites = Hash[site_dependencies.min_by(n) {|site, count| count}].keys
