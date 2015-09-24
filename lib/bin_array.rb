@@ -84,8 +84,9 @@ class BinArray
       # Test each site ...
       src_partition.sites.each do |site|
 
-        simulation_result = {}
-        # ... in each bin
+        simulation_result_below_bound = {}
+        simulation_result_above_bound = {}
+        # ... in each bin ...
         self.each_with_index do |bin, bin_index|
           target_partition = bin.list[src_partition.name]
           if target_partition.nil?
@@ -94,14 +95,22 @@ class BinArray
           else
             # Simulate insertion of site into existing partition of current bin
             operations = target_partition.incr_add_sites!([site], true)
-            # Find out if bin.size is already larger than the lower bound, then make the operation more costly
-            operations = (operations + 100) * 100 if bin.update_size!.size > @operations_lower_bound # FIXME: Very hacky
           end
-          simulation_result.merge!({operations => bin_index})
+          # Check if bin.size is smaller than lower_bound. Save simulation_result accordingly to prefer addition below lower_bound.
+          if bin.update_size!.size < @operations_lower_bound
+            simulation_result_below_bound.merge!({operations => bin_index})
+          else
+            simulation_result_above_bound.merge!({operations => bin_index})
+          end
+
         end
 
         # Insert at lowest operation cost
-        best = simulation_result.min_by {|key, value| key}
+        best = if simulation_result_below_bound.empty?
+                 simulation_result_above_bound.min_by {|operations, bin_index| operations}
+               else
+                 simulation_result_below_bound.min_by {|operations, bin_index| operations}
+               end
         target_partition = @list[best[1]].list[src_partition.name]
         if target_partition.nil?
           @list[best[1]].add!([Partition.new(src_partition.name, [site], src_partition.tree)])
