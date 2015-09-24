@@ -4,6 +4,7 @@ class Partition
   attr_reader :name
   attr_reader :sites
   attr_reader :tree
+  attr_reader :tree_cloned
   attr_reader :op_maximum
   attr_reader :op_optimized
   attr_reader :op_savings
@@ -14,15 +15,14 @@ class Partition
     @op_maximum = 0
     @op_optimized = 0
     @op_savings = 0
-    if !tree.nil?
-      @tree = DeepClone.clone tree
-      self.ml_operations! if compute
-    end
+    @tree = tree
+    @tree_cloned = false
+    self.ml_operations! if compute && !tree.nil?
   end
 
   # Add tree to partition and calculate operations
   def add_tree!(tree, compute = true)
-    @tree = DeepClone.clone tree
+    @tree = tree
     self.ml_operations! if compute
     self
   end
@@ -36,13 +36,9 @@ class Partition
     end
   end
 
-  # ML operations based on saved tree or given tree
-  def ml_operations!(tree = nil)
-    result = if tree.nil?
-               @tree.ml_operations!(@sites)
-             else
-               tree.ml_operations!(@sites)
-             end
+  # Update operations for partition
+  def ml_operations!
+    result = @tree.ml_operations!(@sites)
     @op_maximum = result[:op_maximum]
     @op_optimized = result[:op_optimized]
     @op_savings = result[:op_savings]
@@ -71,6 +67,13 @@ class Partition
 
   # Add sites to partition and calculate the operations.
   def incr_add_sites!(sites, simulate = false)
+    # Get a clean copy of the tree and rerun ml_operations since we do not know what was stored in the tree before
+    if @tree_cloned == false
+      @tree = DeepClone.clone @tree
+      @tree_cloned = true
+      self.ml_operations!
+    end
+
     result = @tree.ml_operations!(sites, false, simulate)
     unless simulate
       @sites.push(sites).flatten!

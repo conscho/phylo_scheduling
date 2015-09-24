@@ -120,8 +120,6 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
                          else
                            bins.adapted_scheduling_initial!(partitions)
                          end
-  # Save individual copies of tree for each partition
-  remaining_partitions.add_tree!(tree_master)
 
   if heuristic.include?('orig-sched')
     bins.original_scheduling_fill!(remaining_partitions)
@@ -237,7 +235,6 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     # Rerun respective heuristic
     remaining_partitions = bins.adapted_scheduling_initial!(partitions)
-    remaining_partitions.add_tree!(tree_master)
     if heuristic.include?('grdy1')
       bins.greedy1_initial!(remaining_partitions)
       bins.greedy1_fill!(remaining_partitions)

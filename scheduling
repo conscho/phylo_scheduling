@@ -66,7 +66,7 @@ class Scheduling < Thor
     tree_master.set_edge_length!.midpointRoot
 
     # Get partition sizes and sort by operations
-    partitions_master.ml_operations!(tree_master).sort!
+    partitions_master.add_tree!(tree_master).sort!
 
     # Initialize bin list
     bins_master = BinArray.new(options[:number_of_bins])

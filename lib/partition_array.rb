@@ -21,9 +21,9 @@ class PartitionArray
   end
 
   # Calculate ML operations for given tree for all partitions
-  def ml_operations!(tree)
+  def ml_operations!
     @list.each_value do |partition|
-      partition.ml_operations!(tree)
+      partition.ml_operations!
     end
     self
   end
