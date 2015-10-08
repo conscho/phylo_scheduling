@@ -199,7 +199,8 @@ class BinArray
       total_free_space = self.total_free_space
 
       # How many operations need to go into the current bin
-      operations_for_bin = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_operations_remaining).ceil
+      operations_for_bin = [((@operations_lower_bound - bin.size).to_f / total_free_space * total_operations_remaining).ceil,
+                            @operations_lower_bound - bin.size].max
 
       # Fill sites that add up to "operations_for_bin" taken from "remaining_partitions" into the bin.
       # The rest stays in "remaining_partitions".

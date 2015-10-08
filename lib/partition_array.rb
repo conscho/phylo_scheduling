@@ -104,7 +104,7 @@ class PartitionArray
     return dropped_partitions
   end
 
-  # Drop the first partitions that sum up to "target_operations" operations
+  # Drop the first partitions that sum up to more than "target_operations" operations
   def drop_operations!(target_operations)
     dropped_partitions = []
     operations = 0

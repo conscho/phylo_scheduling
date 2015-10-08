@@ -101,8 +101,9 @@ class Scheduling < Thor
     puts 'Sorting sites lexicographically'
     tree_master.sort_sites!(partitions_master)
     partitions_master.add_tree!(tree_master, false)
-    # Don't apply original scheduling when doing lexicographic sort
+    # Don't apply 'original-scheduling' and 'groundtruth' when doing lexicographic sort
     heuristic_options.delete('orig-sched')
+    heuristic_options.delete('grdtruth')
 
 
     heuristic_options.each do |heuristic|
