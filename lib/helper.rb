@@ -126,7 +126,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
     optimization_options = [] # Don't run optimization for the original scheduling algorithm
 
   elsif heuristic.include?('grdtruth')
-    list_of_sites = remaining_partitions.map do |partition|
+    list_of_sites = partitions_master.map do |partition|
       partition.sites.map {|i| {i => partition.name} }
     end.flatten.compact
 
@@ -146,16 +146,8 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
         bin_operations_maximum = 0
         bin_operations_optimized = 0
 
-        # Add sites from initial_fill
-        bin_builder = Hash.new([])
-        bins.list[bin_index].each do |partition|
-          bin_builder[partition.name] += partition.sites
-        end
         # Convert sites array to partitions array for current bin
-        distribution[bin_index].each do |site|
-          bin_builder[site.values[0]] += [site.keys[0]]
-        end
-        distribution[bin_index] = bin_builder
+        distribution[bin_index] = distribution[bin_index].each_with_object(Hash.new([])) { |site, partitions| partitions[site.values[0]] = partitions[site.values[0]] + [site.keys[0]]}
 
         # Iterate over all partitions and add up operations for this bin
         distribution[bin_index].each do |partition_name, partition_range|
