@@ -137,7 +137,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 
 
     # Test each distribution and save best distribution
-    results = Parallel.map(distributions, :in_processes => 3, :progress => "Checking all distributions") do |distribution|
+    results = Parallel.map(distributions, :in_processes => 0, :progress => "Checking all distributions") do |distribution|
       dist_operations_maximum = 0
       dist_operations_optimized = 0
 
