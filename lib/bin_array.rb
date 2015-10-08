@@ -67,7 +67,7 @@ class BinArray
         dropped_partition = remaining_partitions.list.values[partition_index].drop_random_site!
         bin.add!([dropped_partition])
 
-      elsif bin_index < @list.size # Prevent index out of bound
+      elsif bin_index < @list.size - 1 # Prevent index out of bound
         # Is there a partition switch directly at the beginning of the next bin?
         if site_list[site_index + sites_for_bin - 1].values.first != site_list[site_index + sites_for_bin].values.first
           partition_index += 1
