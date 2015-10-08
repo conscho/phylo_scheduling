@@ -25,9 +25,13 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => '-l',
          :desc => 'Path to phylip file ' \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 6, :aliases => '-n',
+  option :number_of_bins, :type => :numeric, :default => 2, :aliases => '-n',
          :desc => 'Number of bins that the sites should be distributed to. ' \
                   "Example: '-n 3' "
+  option :groundtruth, :type => :boolean, :default => false, :aliases => '-g',
+         :desc => 'Compare the heuristics with the groundtruth. ' \
+                  'If true the dataset will be cropped since the groundtruth can only handle a limited amount of sites. ' \
+                  "Example: '-g true' "
 
   def generate
 
@@ -56,6 +60,16 @@ class Scheduling < Thor
          "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
          "Number of partitions: #{partitions_master.size}"
 
+    # Crop partitions if we calculate the groundtruth
+    if options[:groundtruth]
+      # Init for groundtruth
+      crop_partitions = 3
+      crop_sites_per_partition = 5
+
+      heuristic_options << 'grdtruth'
+
+      partitions_master.crop!(crop_partitions, crop_sites_per_partition)
+    end
 
     # Get data
     puts 'Getting data'

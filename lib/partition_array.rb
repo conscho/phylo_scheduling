@@ -136,6 +136,14 @@ class PartitionArray
     return dropped_partitions
   end
 
+  # Crop partitions for groundtruth calculation
+  def crop!(crop_partitions, crop_sites_per_partition)
+    @list = Hash[@list.first(crop_partitions)]
+    @list = Hash[@list.map do |partition_name, partition|
+      [partition_name, partition.crop(crop_sites_per_partition)]
+    end]
+  end
+
   # In-place sorting after "op_optimized"
   def sort!
     @list = Hash[@list.sort_by {|partition_name, partition| partition}]

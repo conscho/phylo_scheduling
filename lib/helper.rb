@@ -125,6 +125,65 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
     bins.original_scheduling_fill!(remaining_partitions)
     optimization_options = [] # Don't run optimization for the original scheduling algorithm
 
+  elsif heuristic.include?('grdtruth')
+    list_of_sites = remaining_partitions.map do |partition|
+      partition.sites.map {|i| {i => partition.name} }
+    end.flatten.compact
+
+    # Distribute to bins
+    puts "Distributing #{list_of_sites.size} sites to #{bins.list.size} bins"
+    distributions = list_of_sites.distribute_to_bins(bins.list.size).to_a
+    puts "Groundtruth: #{distributions.size} total possible distributions"
+
+
+    # Test each distribution and save best distribution
+    results = Parallel.map(distributions, :in_processes => 3, :progress => "Checking all distributions") do |distribution|
+      dist_operations_maximum = 0
+      dist_operations_optimized = 0
+
+      # Iterate over each bin of the current distribution
+      distribution.each_index do |bin_index|
+        bin_operations_maximum = 0
+        bin_operations_optimized = 0
+
+        # Add sites from initial_fill
+        bin_builder = Hash.new([])
+        bins.list[bin_index].each do |partition|
+          bin_builder[partition.name] += partition.sites
+        end
+        # Convert sites array to partitions array for current bin
+        distribution[bin_index].each do |site|
+          bin_builder[site.values[0]] += [site.keys[0]]
+        end
+        distribution[bin_index] = bin_builder
+
+        # Iterate over all partitions and add up operations for this bin
+        distribution[bin_index].each do |partition_name, partition_range|
+          result = tree_master.ml_operations!(partition_range)
+          bin_operations_maximum += result[:op_maximum]
+          bin_operations_optimized += result[:op_optimized]
+        end
+
+        # Get the operations count for the largest bin of the current distribution -> bottleneck
+        if bin_operations_optimized > dist_operations_optimized
+          dist_operations_optimized = bin_operations_optimized
+          dist_operations_maximum = bin_operations_maximum
+        end
+
+      end
+
+      [dist_operations_optimized, dist_operations_maximum, distribution]
+    end
+
+    minimum = results.min_by(&:first)
+
+    bins = BinArray.new(bins.list.size)
+    minimum[2].each_with_index do |bin, bin_index|
+      bins.list[bin_index].add!(PartitionArray.new(bin).add_tree!(tree_master))
+    end
+
+    optimization_options = [] # Don't run optimization for the groundtruth
+
   elsif heuristic.include?('grdy1')
     bins.greedy1_initial!(remaining_partitions)
     bins.greedy1_fill!(remaining_partitions)
