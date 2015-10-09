@@ -41,6 +41,15 @@ for (parameter.file in files) {
     group_by(description) %>%
     slice(which.max(operations_sites))
   
+  # Get number of split partitions
+  splitData = rawData %>% 
+    group_by(description, partition) %>% 
+    filter(n()>1) %>%
+    dplyr::summarize(count=n()-1) %>%
+    group_by(description) %>%
+    dplyr::summarize(splits = sum(count))
+  sumData = inner_join(sumData, splitData, by = "description")
+  
   
   # Generate graphs
   ggplotTitle = ggtitle(paste("Barchart scheduling: Partition distribution to bins for various heuristics\nRed horizontal line = lower bound\n", parametersTitle))
@@ -50,11 +59,11 @@ for (parameter.file in files) {
     geom_rect(data = subset(sumData, operations_sites == min(sumData$operations_sites)), aes(xmin = -Inf, ymin = -Inf, xmax = +Inf, ymax = Inf), fill = "green", alpha = 30/100) + 
     geom_bar(aes(x=bin, y=operations_sites, fill=partition), stat="identity", colour="black") + 
     geom_text(aes(label=operations_sites, bin, operations_sites), position="stack", vjust = +1, size=2) + 
-    geom_text(aes(0, operations_sites, label=paste("largest bin:\n", "operations: ", operations_sites, "\n", "savings: ", savings, "%", sep=""), group=NULL), data=sumData, vjust=-0.3, hjust=0.1/max(combData$bin), color = "red", size=3) + 
+    geom_text(aes(0, operations_sites, label=paste("largest bin:\n", "operations: ", operations_sites, "\n", "savings: ", savings, "%", "\n", "splits: ", splits, sep=""), group=NULL), data=sumData, vjust=-0.3, hjust=0.1/max(combData$bin), color = "red", size=3) + 
     geom_line(aes(x=bin, y=optimum), color="red", data=rawData) + 
     facet_grid(type~description, scales = "free_y") + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=90, h=10, limitsize=FALSE)
+  ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=90, h=15, limitsize=FALSE)
   
 }
 
