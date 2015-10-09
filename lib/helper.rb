@@ -224,6 +224,8 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
           site_dependencies = split_partition.get_site_dependencies_count
           min_sites = Hash[site_dependencies.min_by([site_dependencies.size / 5, [site_dependencies.size, 10].min].max) {|site, count| count}].keys
           partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
+          # Delete partition if all sites will be redistributed
+          bin.list.delete(split_partition) if split_partition.empty?
         end
       end
       # Define current bins average as lower bound
