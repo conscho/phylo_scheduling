@@ -170,6 +170,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
     minimum = results.min_by(&:first)
 
     bins = BinArray.new(bins.list.size)
+    bins.set_lower_bound!(partitions_master)
     minimum[2].each_with_index do |bin, bin_index|
       bins.list[bin_index].add!(PartitionArray.new(bin).add_tree!(tree_master))
     end
