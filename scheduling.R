@@ -9,6 +9,9 @@ library(gridExtra)
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+# Init for total comparison of heuristics
+totalComparison = data_frame()
+
 
 files <- list.files("output_scheduling", pattern = "*parameters.csv", full.names = TRUE)
 for (parameter.file in files) {
@@ -56,6 +59,12 @@ for (parameter.file in files) {
     dplyr::summarize(splits = sum(count))
   sumData = full_join(sumData, splitData)
   
+  # Create overall summary
+  if(programParameters[1, "groundtruth"] == "false") {
+    # Add sumData with own column graphFileName
+    sumData$fileName <- graphFileName
+    totalComparison <- rbind(totalComparison, sumData)
+  }
   
   
   # Generate graph
@@ -91,10 +100,31 @@ for (parameter.file in files) {
     geom_line(aes(description, lower_bound_rel), color="red") +
     facet_wrap(~type, scales = "free_y", ncol=1) + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " scheduling2", ".pdf" , sep = ""), plot = gp, w=25, h=10, limitsize=FALSE)
+  ggsave(file=paste(graphFileName, " scheduling2", ".pdf" , sep = ""), plot = gp, w=25, h=10)
 
   
 }
 
+# Get mean squared error and mean splits
+totalComparison$squared_error <- (totalComparison$op_optimized_rel - totalComparison$lower_bound_rel)^2
+# Dummy facetting for graph
+totalData1 = totalComparison %>%
+  group_by(description) %>%
+  dplyr::summarise(graph_points = round(mean(squared_error), 4), squared_error = round(mean(squared_error), 4))
+totalData1$type <- "squared_error"
+totalData2 = totalComparison %>%
+  group_by(description) %>%
+  dplyr::summarise(graph_points = round(mean(splits), 2), squared_error = round(mean(squared_error), 4))
+totalData2$type <- "splits"
+totalData = full_join(totalData1, totalData2)
+totalData$type <- factor(totalData$type, levels = c("squared_error", "splits"))
 
-
+# Generate graph
+ggplotTitle = ggtitle("Linechart: Mean squared error of all heuristics over all datasets")
+gp = ggplot(totalData, aes(x=reorder(description, squared_error), y=graph_points, group=1)) + 
+  xlab("heuristics") + ylab("mean squared error") +
+  geom_line() + geom_point() +
+  geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
+  facet_wrap(~type, ncol = 1, scales = "free_y") +
+  ggplotTheme + ggplotTitle + ggplotRotateLabel
+ggsave(file="graphs/mean squared error scheduling.pdf", plot = gp, w=20, h=8)
