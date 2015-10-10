@@ -126,8 +126,12 @@ class PartitionArray
           operations += partition.incr_add_sites!(sites)
         end
 
-        # Update size of remaining partition
-        @list.values[0].ml_operations!
+        # Update size of remaining partition or drop if empty
+        if @list.values[0].empty?
+          self.drop!(1)
+        else
+          @list.values[0].ml_operations!
+        end
 
         dropped_partitions << partition
       end
