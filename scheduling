@@ -63,6 +63,8 @@ class Scheduling < Thor
     puts "Using parameters: tree_file: #{options[:tree_file]}; " \
          "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
          "Sample root nodes: #{sample_root}; " \
+         "Number of bins: #{options[:number_of_bins]}; " \
+         "Groundtruth: #{options[:groundtruth]}; " \
          "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
          "Number of partitions: #{partitions_master.size}"
 
@@ -125,7 +127,7 @@ class Scheduling < Thor
 
 
     # Output parameters to CSV for R
-    program_parameters_output = { number_of_bins: options[:number_of_bins],
+    program_parameters_output = { number_of_bins: options[:number_of_bins], groundtruth: options[:groundtruth],
                                   phylip_file: phylip_file, sample_root: sample_root,
                                   program_runtime: program_runtime, data_file: data_file,
                                   graph_file_name: graph_file_name
