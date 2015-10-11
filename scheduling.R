@@ -1,8 +1,6 @@
 library(ggplot2)
 library(grid)
-library(plyr)
 library(dplyr)
-library(gridExtra)
 
 
 
@@ -23,26 +21,26 @@ for (parameter.file in files) {
   parametersTitle = ""
   for (parameterName in names(programParameters)) {
     parametersTitle <- paste(parametersTitle,(paste(parameterName, programParameters[1, parameterName], sep=": ")), sep = "\n")
-    }
-
+  }
+  
   # Read and aggregate data
   rawData = read.csv(paste(programParameters[1, "data_file"]))
   rawData$type <- "operations"
-  rawData <- rename(rawData, c("op_optimized"="graph_points"))
+  rawData <- dplyr::rename(rawData, graph_points = op_optimized)
   rawData = dplyr::select(rawData, -sites)
   
   rawData2 = read.csv(paste(programParameters[1, "data_file"]))
   rawData2$type <- "sites"
-  rawData2 <- rename(rawData2, c("op_optimized"="graph_points"))
+  rawData2 <- dplyr::rename(rawData2, graph_points = op_optimized)
   rawData2$graph_points <- rawData2$sites
   rawData2 = dplyr::select(rawData2, -lower_bound, -sites)
-
+  
   combData = full_join(rawData, rawData2)
   
   
   # Calculate summary data
   sumData = aggregate(rawData[c("graph_points", "op_maximum")], by=rawData[c("bin", "description", "type", "lower_bound")], FUN=sum)
-  sumData <- rename(sumData, c("graph_points"="op_optimized"))
+  sumData <- dplyr::rename(sumData, op_optimized = graph_points)
   sumData$savings <- round((sumData$op_maximum - sumData$op_optimized)/sumData$op_maximum*100, 2)
   sumData = sumData %>%
     group_by(description) %>%
@@ -69,7 +67,7 @@ for (parameter.file in files) {
   
   # Generate graph
   ggplotTitle = ggtitle(paste("Barchart scheduling: Partition distribution to bins for various heuristics\nRed horizontal line = lower bound\n", parametersTitle))
-  gp = ggplot(combData, aes(x=bin, ymax = 0)) + 
+  gp = ggplot(combData, aes(x=bin, ymax=0)) + 
     scale_x_discrete(limit = 0:max(combData$bin)) + 
     geom_blank(aes(y=graph_points*1.1), position = "stack") + ylab("") + ## Dirty hack to increase upper boundary of y-axis 
     geom_rect(data = subset(sumData, op_optimized == min(sumData$op_optimized)), aes(xmin = -Inf, ymin = -Inf, xmax = +Inf, ymax = Inf), fill = "green", alpha = 30/100) + 
@@ -101,30 +99,36 @@ for (parameter.file in files) {
     facet_wrap(~type, scales = "free_y", ncol=1) + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
   ggsave(file=paste(graphFileName, " scheduling2", ".pdf" , sep = ""), plot = gp, w=25, h=10)
-
+  
   
 }
 
-# Get mean squared error and mean splits
-totalComparison$squared_error <- (totalComparison$op_optimized_rel - totalComparison$lower_bound_rel)^2
-# Dummy facetting for graph
-totalData1 = totalComparison %>%
-  group_by(description) %>%
-  dplyr::summarise(graph_points = round(mean(squared_error), 4), squared_error = round(mean(squared_error), 4))
-totalData1$type <- "squared_error"
-totalData2 = totalComparison %>%
-  group_by(description) %>%
-  dplyr::summarise(graph_points = round(mean(splits), 2), squared_error = round(mean(squared_error), 4))
-totalData2$type <- "splits"
-totalData = full_join(totalData1, totalData2)
-totalData$type <- factor(totalData$type, levels = c("squared_error", "splits"))
-
-# Generate graph
-ggplotTitle = ggtitle("Linechart: Mean squared error of all heuristics over all datasets")
-gp = ggplot(totalData, aes(x=reorder(description, squared_error), y=graph_points, group=1)) + 
-  xlab("heuristics") + ylab("mean squared error") +
-  geom_line() + geom_point() +
-  geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
-  facet_wrap(~type, ncol = 1, scales = "free_y") +
-  ggplotTheme + ggplotTitle + ggplotRotateLabel
-ggsave(file="graphs/mean squared error scheduling.pdf", plot = gp, w=20, h=8)
+# Only if there are results
+if(NROW(totalComparison) > 0) {
+  
+  # Get mean squared error and mean splits
+  totalComparison$squared_error <- (totalComparison$op_optimized_rel - totalComparison$lower_bound_rel)^2
+  # Dummy facetting for graph
+  totalData1 = totalComparison %>%
+    group_by(description) %>%
+    dplyr::summarise(graph_points = round(mean(squared_error), 4), squared_error = round(mean(squared_error), 4))
+  totalData1$type <- "squared_error"
+  totalData2 = totalComparison %>%
+    group_by(description) %>%
+    dplyr::summarise(graph_points = round(mean(splits), 2), squared_error = round(mean(squared_error), 4))
+  totalData2$type <- "splits"
+  totalData = full_join(totalData1, totalData2)
+  totalData$type <- factor(totalData$type, levels = c("squared_error", "splits"))
+  
+  # Generate graph
+  ggplotTitle = ggtitle(paste("Linechart: Mean squared error of all heuristics over all datasets\n", 
+                              "Total datasets: ", length(unique(totalComparison$fileName))))
+  gp = ggplot(totalData, aes(x=reorder(description, squared_error), y=graph_points, group=1)) + 
+    xlab("heuristics") + ylab("mean squared error") +
+    geom_line() + geom_point() +
+    geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
+    facet_wrap(~type, ncol = 1, scales = "free_y") +
+    ggplotTheme + ggplotTitle + ggplotRotateLabel
+  ggsave(file="graphs/mean squared error scheduling.pdf", plot = gp, w=20, h=8)
+  
+}
