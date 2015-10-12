@@ -38,6 +38,9 @@ class Scheduling < Thor
   option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12 " \
                   "Example: '-s 7' "
+  option :number_of_processes, :type => :numeric, :default => 0, :aliases => "-P",
+         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
+                  "Example: '-P 2' "
 
   def generate
 
@@ -65,6 +68,7 @@ class Scheduling < Thor
          "Sample root nodes: #{sample_root}; " \
          "Number of bins: #{options[:number_of_bins]}; " \
          "Groundtruth: #{options[:groundtruth]}; " \
+         "Parallel processing: #{options[:number_of_processes]}; " \
          "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
          "Number of partitions: #{partitions_master.size}"
 
@@ -95,7 +99,7 @@ class Scheduling < Thor
 
 
     # Iterate over all heuristics with standard sorting of sites
-    heuristic_options.each do |heuristic|
+    Parallel.each(heuristic_options, :in_processes => options[:number_of_processes]) do |heuristic|
       csv_output << apply_heuristic(heuristic, optimization_options, bins_master, partitions_master, tree_master)
     end
 
@@ -109,7 +113,7 @@ class Scheduling < Thor
     heuristic_options.delete('grdtruth')
 
 
-    heuristic_options.each do |heuristic|
+    Parallel.each(heuristic_options, :in_processes => options[:number_of_processes]) do |heuristic|
       csv_output << apply_heuristic("#{heuristic}_lxi", optimization_options, bins_master, partitions_master, tree_master)
     end
 
@@ -129,8 +133,8 @@ class Scheduling < Thor
     # Output parameters to CSV for R
     program_parameters_output = { number_of_bins: options[:number_of_bins], groundtruth: options[:groundtruth],
                                   phylip_file: phylip_file, sample_root: sample_root,
-                                  program_runtime: program_runtime, data_file: data_file,
-                                  graph_file_name: graph_file_name
+                                  parallel_processing: options[:number_of_processes], program_runtime: program_runtime,
+                                  data_file: data_file, graph_file_name: graph_file_name
     }
 
     parameter_file = "#{output_directory}/#{start_time.strftime '%Y-%m-%d %H-%M-%S'} parameters.csv"
