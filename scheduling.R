@@ -107,28 +107,28 @@ for (parameter.file in files) {
 if(NROW(totalComparison) > 0) {
   
   # Get mean squared error and mean splits
-  totalComparison$squared_error <- (totalComparison$op_optimized_rel - totalComparison$lower_bound_rel)^2
+  totalComparison$comparison <- (totalComparison$op_optimized_rel - totalComparison$lower_bound_rel) * 100
   # Dummy facetting for graph
   totalData1 = totalComparison %>%
     group_by(description) %>%
-    dplyr::summarise(graph_points = round(mean(squared_error), 4), squared_error = round(mean(squared_error), 4))
-  totalData1$type <- "squared_error"
+    dplyr::summarise(graph_points = round(mean(comparison), 4), comparison = round(mean(comparison), 4))
+  totalData1$type <- "comparison"
   totalData2 = totalComparison %>%
     group_by(description) %>%
-    dplyr::summarise(graph_points = round(mean(splits), 2), squared_error = round(mean(squared_error), 4))
+    dplyr::summarise(graph_points = round(mean(splits), 2), comparison = round(mean(comparison), 4))
   totalData2$type <- "splits"
   totalData = full_join(totalData1, totalData2)
-  totalData$type <- factor(totalData$type, levels = c("squared_error", "splits"))
+  totalData$type <- factor(totalData$type, levels = c("comparison", "splits"))
   
   # Generate graph
-  ggplotTitle = ggtitle(paste("Linechart: Mean squared error of all heuristics over all datasets\n", 
+  ggplotTitle = ggtitle(paste("Linechart: Comparison of #operations of each heuristics to the lower bound over all datasets\n", 
                               "Total datasets: ", length(unique(totalComparison$fileName))))
-  gp = ggplot(totalData, aes(x=reorder(description, squared_error), y=graph_points, group=1)) + 
-    xlab("heuristics") + ylab("mean squared error") +
+  gp = ggplot(totalData, aes(x=reorder(description, comparison), y=graph_points, group=1)) + 
+    xlab("heuristics") + ylab("absolute number of splits || percentage in comparison to lower bound") +
     geom_line() + geom_point() +
     geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
     facet_wrap(~type, ncol = 1, scales = "free_y") +
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file="graphs/mean squared error scheduling.pdf", plot = gp, w=20, h=8)
+  ggsave(file="graphs/comparison scheduling.pdf", plot = gp, w=20, h=8)
   
 }
