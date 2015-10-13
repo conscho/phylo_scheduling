@@ -129,7 +129,7 @@ class Partition
 
   # Delete (determinisitc) random site in partition without updating operations
   def drop_random_site!
-    dropped_site = @sites[@sites.size % 3]
+    dropped_site = @sites.sample
     @sites.delete(dropped_site)
     return Partition.new(@name, [dropped_site], @tree)
   end

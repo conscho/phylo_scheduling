@@ -38,6 +38,9 @@ class Scheduling < Thor
   option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
          :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12 " \
                   "Example: '-s 7' "
+  option :random_seed, :type => :numeric, :default => 5, :aliases => "-r",
+         :desc => "Define a random number seed for the heuristics " \
+                  "Example: '-r 12345' "
 
   def generate
 
@@ -52,6 +55,7 @@ class Scheduling < Thor
     partitions_master = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join('-')} #{start_time.strftime '%Y-%m-%d %H-%M-%S'}"
+    srand(options[:random_seed]) # Initialize randomizer
 
     # Drop identical sites
     unless partition_file.include?('uniq')
