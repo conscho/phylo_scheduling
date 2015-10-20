@@ -109,7 +109,7 @@ class PartitionArray
     dropped_partitions = []
     operations = 0
 
-    until operations > target_operations || @list.empty? do
+    until operations >= target_operations || @list.empty? do
 
       if @list.values[0].op_optimized <= target_operations - operations
         operations += @list.values[0].op_optimized
@@ -121,7 +121,7 @@ class PartitionArray
         operations += partition.op_optimized
 
         # Add sites to partition
-        until operations > target_operations
+        until operations >= target_operations
           sites = @list.values[0].delete_sites!(1)
           operations += partition.incr_add_sites!(sites)
         end
