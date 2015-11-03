@@ -1,0 +1,140 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'thor'
+require 'parallel'
+require 'fileutils'
+require 'pp'
+require 'ruby-progressbar'
+#require 'Newick' # Some problem with including the forked gem
+require 'require_all'
+require 'deep_clone'
+#require 'stackprof' # Used for profiling
+require 'matrix'
+
+require_all 'lib'
+
+
+class Sorting < Thor
+  desc 'generate', 'MSA sorting comparison'
+  option :tree_file, :required => true, :aliases => '-t',
+         :desc => 'Which tree should be used ' \
+                  "Example: '-t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0' "
+  option :partition_file, :required => true, :aliases => '-p',
+         :desc => 'Path to partition file ' \
+                  "Example: '-p ./data/59/59.partitions' "
+  option :phylip_file, :required => true, :aliases => '-l',
+         :desc => 'Path to phylip file ' \
+                  "Example: '-l ./data/59/59.phy' "
+  option :crop_partitions, :type => :numeric, :default => 5, :aliases => "-n",
+         :desc => "Crop the datafile to x partitions. " \
+                  "Example: '-n 3' "
+  option :crop_sites_per_partition, :type => :numeric, :default => 200, :aliases => "-s",
+         :desc => "Crop the number of sites in each partition. " \
+                  "Example: '-s 7' "
+
+
+  def generate
+
+    # Initialize
+    partition_file = options[:partition_file]
+    phylip_file = options[:phylip_file]
+    sample_root = 'midpoint'
+    csv_output = []
+    start_time = Time.now
+    partitions = PartitionArray.from_file(partition_file)
+    number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
+    graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join('-')} #{start_time.strftime '%Y-%m-%d %H-%M-%S'}"
+
+    # Drop identical sites
+    unless partition_file.include?('uniq')
+      number_of_sites, partitions, phylip_data, partition_file, phylip_file =
+          drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
+    end
+
+    puts "Program started at #{start_time}"
+    puts "Using parameters: tree_file: #{options[:tree_file]}; " \
+         "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
+         "Sample root nodes: #{sample_root}; " \
+         "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
+         "Number of partitions: #{partitions.size}"
+
+    # Crop partitions
+    partitions.crop!(options[:crop_partitions], options[:crop_sites_per_partition])
+
+    # Get data
+    puts 'Getting data'
+    tree = NewickTree.fromFile(options[:tree_file])
+    tree = tree.add_dna_sequences(phylip_data)
+
+    # Midpoint root
+    tree.set_edge_length!.midpointRoot
+
+
+    # Original sorting of sites
+    # Get accumulated distance between consecutive sites
+    partitions.each do |partition|
+      total_distance = 0
+      partition.sites.first(partition.sites.size - 1).each do |site|
+        total_distance += tree.root.distance!(site, site + 1)
+        tree.root.clear_tainted!
+      end
+      csv_output << {partition: partition.name, distance: total_distance, sort: "original" }
+    end
+
+    # TSP/MST sorting of sites
+    tree.mst_sort!(partitions)
+    # Get accumulated distance between consecutive sites
+    partitions.each do |partition|
+      total_distance = 0
+      partition.sites.first(partition.sites.size - 1).each do |site|
+        total_distance += tree.src_distance(site, site + 1)
+      end
+      csv_output << {partition: partition.name, distance: total_distance, sort: "mst" }
+    end
+
+    # Lexicographic sorting of sites
+    tree.lexi_sort!(partitions)
+    # Get accumulated distance between consecutive sites
+    partitions.each do |partition|
+      total_distance = 0
+      partition.sites.first(partition.sites.size - 1).each do |site|
+        total_distance += tree.root.distance!(site, site + 1)
+        tree.root.clear_tainted!
+      end
+      csv_output << {partition: partition.name, distance: total_distance, sort: "lxi" }
+    end
+
+
+    program_runtime = (Time.now - start_time).duration
+
+    # Check if output folder exists
+    output_directory = "./output_#{File.basename(__FILE__, '.rb')}"
+    FileUtils.mkdir_p(output_directory)
+
+    # Output results to CSV for R
+    data_file = "#{output_directory}/#{start_time.strftime '%Y-%m-%d %H-%M-%S'} data.csv"
+    puts "Writing data to #{data_file}"
+    csv_output.flatten.array_of_hashes_to_csv_file(data_file)
+
+
+    # Output parameters to CSV for R
+    program_parameters_output = { crop_partitions: options[:crop_partitions], crop_sites: options[:crop_sites_per_partition],
+                                  phylip_file: phylip_file, sample_root: sample_root,
+                                  program_runtime: program_runtime, data_file: data_file,
+                                  graph_file_name: graph_file_name
+    }
+
+    parameter_file = "#{output_directory}/#{start_time.strftime '%Y-%m-%d %H-%M-%S'} parameters.csv"
+    program_parameters_output.to_csv_file(parameter_file)
+    puts "Program parameters written to #{parameter_file}"
+    puts "Run corresponding R script '#{File.basename(__FILE__, '.rb')}.R' to generate graphs"
+
+    puts "Program finished at #{Time.now}. Runtime: #{program_runtime}"
+
+
+  end
+
+end
+
+Sorting.start

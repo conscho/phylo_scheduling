@@ -10,6 +10,7 @@ require 'ruby-progressbar'
 require 'require_all'
 require 'deep_clone'
 #require 'stackprof' # Used for profiling
+require 'matrix'
 
 require_all 'lib'
 
@@ -106,7 +107,7 @@ class Scheduling < Thor
 
     # Lexicographic sorting of sites
     puts 'Sorting sites lexicographically'
-    tree_master.sort_sites!(partitions_master)
+    tree_master.lexi_sort!(partitions_master)
     partitions_master.add_tree!(tree_master, false)
     # Don't apply 'original-scheduling' and 'groundtruth' when doing lexicographic sort
     heuristic_options.delete('orig-sched')

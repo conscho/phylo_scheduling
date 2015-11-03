@@ -91,6 +91,8 @@ class NewickNode
   attr :x, true
   # y position of node
   attr :y, true
+  # flag for MSA column sorting
+  attr_accessor :tainted
 
   def initialize(name, edgeLen)
     @parent = nil
@@ -99,6 +101,7 @@ class NewickNode
     @calculated_subtrees = Hash.new([])
     @edgeLen = edgeLen
     @children = []
+    @tainted = false
   end
 
   def tree_traversal_and_operations_count(site_number, simulate = false)  # with and without SR (subtree repeats)
@@ -143,7 +146,7 @@ class NewickNode
     end
   end
 
-  # For all node: Get the subtree site patterns and the sites that form each pattern
+  # For all nodes: Get the subtree site patterns and the sites that form each pattern
   def dependencies_per_subtree
     collect_dependencies = []
     descendants.each do |node|
@@ -172,6 +175,31 @@ class NewickNode
       taxa = {@name => @nucleotides}
     end
     return taxa
+  end
+
+  # Compute SRC distance between 2 sites. The shorter the better.
+  def distance!(i, j)
+    distance = 0
+    if leaf?
+      if @nucleotides[i] != @nucleotides[j]
+        @parent.tainted = true
+      end
+    else
+      distance = @children.map { |child| child.distance!(i, j) }.reduce(:+)
+      if @tainted
+        distance += @children.size
+        @parent.tainted = true unless @parent == nil
+      end
+    end
+    distance
+  end
+
+  # Clear the value @tainted from all child nodes
+  def clear_tainted!
+    @tainted = false
+    @children.each do |child|
+      child.clear_tainted!
+    end
   end
 
 
@@ -569,7 +597,7 @@ class NewickTree
   end
 
   # Sort sites lexicographically per partition
-  def sort_sites!(partitions)
+  def lexi_sort!(partitions)
     # Get taxa sorted via tree traversal
     taxa = self.taxa_with_nucleotides
 
@@ -581,6 +609,81 @@ class NewickTree
 
     # Save in tree
     self.add_dna_sequences(Hash[taxa.keys.zip(all_sites.transpose.map {|nucleotides| nucleotides.join })])
+  end
+
+  # Calculate SRC distance between 2 sites
+  def src_distance(i, j)
+    distance = @root.distance!(i, j)
+    @root.clear_tainted!
+    distance
+  end
+
+  # Sort sites according to Pond et al. 2004
+  def mst_sort!(partitions)
+    puts 'Sorting sites by MST:'
+
+    taxa = self.taxa_with_nucleotides
+    all_sites = taxa.values.map {|nucleotides| nucleotides.split('') }.transpose
+    all_sites_sorted = all_sites.dup
+
+    partitions.each_with_index do |partition, partition_index|
+
+      puts "    calculating triangular distance matrix for partition #{partition_index}"
+      adjacency_matrix = Array.new
+
+      adjacency_matrix = Matrix.build(partition.sites.size, partition.sites.size) do |row, column|
+        puts "        processed #{row} of #{partition.sites.size} sites" if row % (partition.sites.size/10).round == 0 && column == 0
+        if column > row
+          distance = @root.distance!(row + partition.sites.first, column + partition.sites.first)
+          @root.clear_tainted!
+          distance
+        else
+          0 # Dummy value for unused entry in matrix
+        end
+      end
+
+      # Mirror/transpose matrix at diagonal
+      adjacency_matrix = adjacency_matrix + adjacency_matrix.transpose
+
+
+      # Prim's algorithm for constructing a MST
+      # Step 1: Choose the longest edge (breaking ties arbitrarily) in 'm' and add one of its vertices to the set 'v'.
+      puts "    constructing MST for partition #{partition_index}"
+      v = []
+      v << adjacency_matrix.index(adjacency_matrix.max).first
+      mst_tree = GenericTree.new(v.first)
+
+      # Step 2: Choose the shortest edge 'e' between a vertex in the set 'v' and a vertex not in 'v' (again, breaking ties arbitrarily).
+      until v.size == partition.sites.size
+        puts "        sorted #{v.size} of #{partition.sites.size} sites" if v.size % (partition.sites.size/10).round == 0
+        min_edge = {distance: Float::INFINITY}
+
+        v.each do |site|
+          adjacency_matrix.row(site).each_with_index do |distance, other_site|
+            unless v.include?(other_site)
+              if distance < min_edge[:distance]
+                min_edge = {from: site, to: other_site, distance: distance}
+              end
+            end
+          end
+        end
+
+        # Add the edge 'e' to the MST.
+        mst_tree.find(min_edge[:from]).add_child(min_edge[:to])
+        # Add the vertex upon which 'e' is incident to v
+        v << min_edge[:to]
+      end
+
+      # Actual sorting of sites
+      mst_tree.preorder_traversal.each_with_index do |site, index|
+        all_sites_sorted[index + partition.sites.first] = all_sites[site + partition.sites.first]
+      end
+
+    end
+
+    # Save in tree
+    self.add_dna_sequences(Hash[taxa.keys.zip(all_sites_sorted.transpose.map {|nucleotides| nucleotides.join })])
+
   end
 
   # return hash of taxa name and nucleotides in tree
