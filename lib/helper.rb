@@ -259,7 +259,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
           next if bins.average_bin_size < bin.size
 
           # Get number of sites that should be moved based on operations worst case
-          n = ((bins.average_bin_size - bin.size).to_f / bins.operations_worst_case).floor
+          n = ((bins.average_bin_size - bin.size).to_f / bins.operations_worst_case).ceil
 
           # Move n sites with minimum dependencies to that bin
           min_sites = Hash[site_dependencies.min_by(n) {|site, count| count}].keys
