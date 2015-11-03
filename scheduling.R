@@ -68,8 +68,8 @@ for (parameter.file in files) {
   # Generate graph
   ggplotTitle = ggtitle(paste("Barchart scheduling: Partition distribution to bins for various heuristics\nRed horizontal line = lower bound\n", parametersTitle))
   gp = ggplot(combData, aes(x=bin, ymax=0)) + 
-    scale_x_discrete(limit = 0:max(combData$bin)) + 
-    geom_blank(aes(y=graph_points*1.1), position = "stack") + ylab("") + ## Dirty hack to increase upper boundary of y-axis 
+    scale_x_discrete(limit = 0:max(combData$bin)) + ylab("") + 
+    geom_blank(aes(y=graph_points*1.1), position = "stack") + ## Dirty hack to increase upper boundary of y-axis 
     geom_rect(data = subset(sumData, op_optimized == min(sumData$op_optimized)), aes(xmin = -Inf, ymin = -Inf, xmax = +Inf, ymax = Inf), fill = "green", alpha = 30/100) + 
     geom_bar(aes(x=bin, y=graph_points, fill=partition), stat="identity", colour="black") + 
     geom_text(aes(label=graph_points, bin, graph_points), position="stack", vjust = +1, size=2) + 

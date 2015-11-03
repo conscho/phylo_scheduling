@@ -10,4 +10,4 @@ gem 'require_all'
 gem 'ruby_deep_clone'
 
 # Forked to add functionality for subtree repeat analysis in ML operations as in RAxML
-gem 'newick-ruby', :git => 'git://github.com/conscho/Newick-ruby'
+# gem 'newick-ruby', :git => 'git://github.com/conscho/Newick-ruby'

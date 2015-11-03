@@ -12,6 +12,7 @@ require './lib/numeric'
 require './lib/array'
 require './lib/hash'
 require './lib/partition_array'
+require './lib/partition'
 
 
 class OptimalSolution < Thor

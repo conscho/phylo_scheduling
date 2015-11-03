@@ -7,11 +7,13 @@ require 'fileutils'
 require 'ruby-progressbar'
 
 require './lib/helper'
+require './lib/newick'
 require './lib/multi_io'
 require './lib/numeric'
 require './lib/array'
 require './lib/hash'
 require './lib/partition_array'
+require './lib/partition'
 
 
 class SiteDependencies < Thor

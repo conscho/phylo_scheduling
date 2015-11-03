@@ -25,7 +25,7 @@ class Scheduling < Thor
   option :phylip_file, :required => true, :aliases => '-l',
          :desc => 'Path to phylip file ' \
                   "Example: '-l ./data/59/59.phy' "
-  option :number_of_bins, :type => :numeric, :default => 3, :aliases => '-b',
+  option :number_of_bins, :type => :numeric, :required => true, :aliases => '-b',
          :desc => 'Number of bins that the sites should be distributed to. ' \
                   "Example: '-b 3' "
   option :groundtruth, :type => :boolean, :default => false, :aliases => '-g',

@@ -1,14 +1,6 @@
-GIT
-  remote: git://github.com/conscho/Newick-ruby
-  revision: 61d3834941f4f42b71b220b883b6d4263e63fe27
-  specs:
-    newick-ruby (1.0.4)
-      fpdf (>= 1.5.3)
-
 GEM
   remote: https://rubygems.org/
   specs:
-    fpdf (1.53)
     parallel (1.6.0)
     require_all (1.3.2)
     ruby-progressbar (1.7.5)
@@ -20,7 +12,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  newick-ruby!
   parallel
   require_all
   ruby-progressbar

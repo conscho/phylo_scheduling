@@ -13,6 +13,7 @@ require './lib/numeric'
 require './lib/array'
 require './lib/hash'
 require './lib/partition_array'
+require './lib/partition'
 
 
 class SiteDependencies < Thor
@@ -67,7 +68,7 @@ class SiteDependencies < Thor
     tree = tree.set_edge_length!.midpointRoot
 
     # Select partition based on user input
-    partition = partitions.list[options[:choose_partition]]
+    partition = partitions.list.values[options[:choose_partition]]
     puts "Using partition named '#{partition.name}'"
     # Crop sites
     partition = partition.crop(options[:crop_sites]) if options[:crop_sites] < partition.sites.size
