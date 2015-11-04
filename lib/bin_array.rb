@@ -191,7 +191,7 @@ class BinArray
   end
 
   # Get ratio of free space for each bin, then fill remaining partitions based on this ratio and the operations left
-  def slide_fill!(remaining_partitions)
+  def cut_fill!(remaining_partitions)
     # Fill each bin starting with the least filled
     self.sort.each do |bin|
       # Total number of operations that need to go into this bin

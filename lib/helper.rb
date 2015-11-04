@@ -115,13 +115,13 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
   partitions = DeepClone.clone partitions_master
 
   # Initial fill: Fill sorted partitions into bins as far as possible without breaking the partitions
-  remaining_partitions = if heuristic.include?('orig_sched')
+  remaining_partitions = if heuristic.include?('odda')
                            bins.original_scheduling_initial!(partitions)
                          else
                            bins.adapted_scheduling_initial!(partitions)
                          end
 
-  if heuristic.include?('orig-sched')
+  if heuristic.include?('odda')
     bins.original_scheduling_fill!(remaining_partitions)
     optimization_options = [] # Don't run optimization for the original scheduling algorithm
 
@@ -177,10 +177,10 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
 
     optimization_options = [] # Don't run optimization for the groundtruth
 
-  elsif heuristic.include?('grdy1')
+  elsif heuristic.include?('grdy')
     bins.greedy1_initial!(remaining_partitions)
     bins.greedy1_fill!(remaining_partitions)
-    optimization_options = Array.new(optimization_options).push('*2')
+    optimization_options = Array.new(optimization_options).push('adj-lmt')
 
   elsif heuristic.include?('grdy2')
     bins.greedy2_fill!(remaining_partitions)
@@ -191,9 +191,9 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
   elsif heuristic.include?('slice')
     bins.slice_fill!(remaining_partitions)
 
-  elsif heuristic.include?('slide')
-    bins.slide_fill!(remaining_partitions)
-    optimization_options = Array.new(optimization_options).push('*2')
+  elsif heuristic.include?('cut')
+    bins.cut_fill!(remaining_partitions)
+    optimization_options = Array.new(optimization_options).push('adj-lmt')
 
   end
 
@@ -277,7 +277,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     csv_output << bins.to_csv("#{heuristic}_#{optimization}")
 
-  elsif optimization == '*2'
+  elsif optimization == 'adj-lmt'
     average_bin_size = bins.average_bin_size
 
     # Get clean data
@@ -292,11 +292,11 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     # Rerun respective heuristic
     remaining_partitions = bins.adapted_scheduling_initial!(partitions)
-    if heuristic.include?('grdy1')
+    if heuristic.include?('grdy')
       bins.greedy1_initial!(remaining_partitions)
       bins.greedy1_fill!(remaining_partitions)
-    elsif heuristic.include?('slide')
-      bins.slide_fill!(remaining_partitions)
+    elsif heuristic.include?('cut')
+      bins.cut_fill!(remaining_partitions)
     end
 
     # Restore original lower_bound

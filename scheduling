@@ -49,7 +49,8 @@ class Scheduling < Thor
     partition_file = options[:partition_file]
     phylip_file = options[:phylip_file]
     sample_root = 'midpoint'
-    heuristic_options = ['orig-sched', 'slide', 'grdy1', 'grdy2', 'grdy3', 'slice']
+    # heuristic_options = ['odda', 'cut', 'grdy', 'grdy2', 'grdy3', 'slice']
+    heuristic_options = ['odda', 'cut', 'grdy']
     optimization_options = ['low-dep', 'red-max']
     csv_output = []
     start_time = Time.now
@@ -109,8 +110,7 @@ class Scheduling < Thor
     puts 'Sorting sites lexicographically'
     tree_master.lexi_sort!(partitions_master)
     partitions_master.add_tree!(tree_master, false)
-    # Don't apply 'original-scheduling' and 'groundtruth' when doing lexicographic sort
-    heuristic_options.delete('orig-sched')
+    # Don't apply 'groundtruth' for lexicographic sorted MSA
     heuristic_options.delete('grdtruth')
 
 
