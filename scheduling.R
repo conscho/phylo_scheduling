@@ -125,7 +125,7 @@ if(NROW(totalComparison) > 0) {
                               "Total datasets: ", length(unique(totalComparison$fileName))))
   gp = ggplot(totalData, aes(x=reorder(description, comparison), y=graph_points, group=1)) + 
     xlab("heuristics") + ylab("absolute number of splits || percentage in comparison to lower bound") +
-    geom_line() + geom_point() +
+    geom_bar(stat = "identity") + 
     geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
     facet_wrap(~type, ncol = 1, scales = "free_y") +
     ggplotTheme + ggplotTitle + ggplotRotateLabel
