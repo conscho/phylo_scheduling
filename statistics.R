@@ -5,6 +5,9 @@ library(dplyr)
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+# Init for total summary of statistics
+totalSummary = data_frame()
+
 files <- list.files("output_statistics", pattern = "*parameters.csv", full.names = TRUE)
 for (parameter.file in files) {
   
@@ -59,4 +62,31 @@ for (parameter.file in files) {
   gp = ggplot(splitData, aes(batch, ratio_split_loss)) + geom_boxplot(alpha=0.5, color="gray") + geom_jitter(alpha=0.1, position = position_jitter(width = 0.05)) + stat_summary(fun.y=mean, colour="red", geom="point", size = 3) + ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " splitt loss per batch", ".pdf" , sep = ""), plot = gp, w=10, h=7)
   
+  
+  # Collect data for total summary
+  aggregatedData$fileName <- graphFileName
+  totalSummary <- rbind(totalSummary, aggregatedData)
+  
 }
+
+
+# Total summary of statistics
+totalSummary = filter(totalSummary, batch %in% c("pars_ml", "rand_ml"))
+totalSummary$ratio_of_savings = round(totalSummary$ratio_of_savings * 100, 2)
+
+labelData <- totalSummary %>%
+  group_by(batch) %>%
+  mutate(note = (min(ratio_of_savings) == ratio_of_savings | max(ratio_of_savings) == ratio_of_savings)) %>%
+  filter(note == TRUE) %>%
+  distinct(ratio_of_savings)
+
+# Generate graph
+ggplotTitle = ggtitle(paste("Boxplot: Savings with the SR technique across all datasets"))
+gp = ggplot(totalSummary, aes(x=batch, y=ratio_of_savings)) + 
+  xlab("") + ylab("Percentage of savings") + 
+  geom_boxplot() + 
+  stat_summary(fun.y=mean, colour="red", geom="point", size=3, show_guide = FALSE) + 
+  stat_summary(aes(label=round(..y.., 2)), fun.y=mean, geom="text", size=3, vjust = -0.5) +
+  geom_text(data = labelData, aes(x = batch, y = ratio_of_savings, label = ratio_of_savings)) +
+  ggplotTheme + ggplotTitle #+ ggplotRotateLabel
+ggsave(file="graphs/summary of savings.pdf", plot = gp, w=8, h=6)
