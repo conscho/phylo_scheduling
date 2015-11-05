@@ -160,6 +160,12 @@ class PartitionArray
     self
   end
 
+  # In-place sorting by site range per partition.
+  def sort_by_site_range!
+    @list = Hash[@list.sort_by {|partition_name, partition| partition.sites}]
+    self
+  end
+
   def size
     @list.size
   end

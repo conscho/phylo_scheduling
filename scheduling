@@ -112,6 +112,7 @@ class Scheduling < Thor
     partitions_master.add_tree!(tree_master, false)
     # Don't apply 'groundtruth' for lexicographic sorted MSA
     heuristic_options.delete('grdtruth')
+    heuristic_options.delete('odda')
 
 
     heuristic_options.each do |heuristic|

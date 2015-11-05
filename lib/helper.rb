@@ -65,6 +65,9 @@ end
 
 def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
 
+  # Sort partitions by site range
+  partitions.sort_by_site_range!
+
   # Remove duplicates per partition
   all_sites = phylip_data.values.map {|taxa| taxa.split('') }.transpose
   uniq_sites = partitions.map { |partition| all_sites[(partition.sites.first .. partition.sites.last)].uniq }
