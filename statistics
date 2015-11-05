@@ -55,13 +55,14 @@ class Statistics < Thor
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
 
+    puts "Program started at #{start_time}"
+
     # Drop identical sites
     unless partition_file.include?("uniq")
       number_of_sites, partitions, phylip_data, partition_file, phylip_file =
           drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
     end
 
-    puts "Program started at #{start_time}"
     puts "Using parameters: Tree files: #{options[:batches]}; " \
      "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
      "Sample root nodes: #{options[:sample_root]}; Sample trees: #{options[:sample_trees]}; " \

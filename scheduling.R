@@ -3,9 +3,7 @@ library(grid)
 library(dplyr)
 
 
-
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
-ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # Init for total comparison of heuristics
 totalComparison = data_frame()
@@ -97,7 +95,7 @@ for (parameter.file in files) {
     geom_text(aes(label = graph_points), vjust = +1.5, size = 3) +
     geom_line(aes(description, lower_bound_rel), color="red") +
     facet_wrap(~type, scales = "free_y", ncol=1) + 
-    ggplotTheme + ggplotTitle + ggplotRotateLabel
+    ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " scheduling2", ".pdf" , sep = ""), plot = gp, w=25, h=10)
   
   
@@ -128,7 +126,7 @@ if(NROW(totalComparison) > 0) {
     geom_bar(stat = "identity") + 
     geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
     facet_wrap(~type, ncol = 1, scales = "free_y") +
-    ggplotTheme + ggplotTitle + ggplotRotateLabel
+    ggplotTheme + ggplotTitle
   ggsave(file="graphs/comparison scheduling.pdf", plot = gp, w=20, h=8)
   
 }

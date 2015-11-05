@@ -59,13 +59,14 @@ class Scheduling < Thor
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join('-')} #{start_time.strftime '%Y-%m-%d %H-%M-%S'}"
     srand(options[:random_seed]) # Initialize randomizer
 
+    puts "Program started at #{start_time}"
+
     # Drop identical sites
     unless partition_file.include?('uniq')
       number_of_sites, partitions_master, phylip_data, partition_file, phylip_file =
           drop_unique_sites(partitions_master, phylip_data, partition_file, phylip_file, number_of_taxa)
     end
 
-    puts "Program started at #{start_time}"
     puts "Using parameters: tree_file: #{options[:tree_file]}; " \
          "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
          "Sample root nodes: #{sample_root}; " \
