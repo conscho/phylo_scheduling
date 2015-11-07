@@ -204,6 +204,9 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
     end
   end
 
+  # Simple assertion
+  assert { partitions_master.total_sites == bins.total_sites }
+
   csv_output << bins.to_csv(heuristic)
 
   # Apply optimization
@@ -243,9 +246,12 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
     bins.greedy1_fill!(partitions_for_redistribution)
     bins.operations_lower_bound = backup_lower_bound
 
+    # Simple assertion
+    assert { partitions_master.total_sites == bins.total_sites }
+
     csv_output << bins.to_csv("#{heuristic}_#{optimization}")
 
-    csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", 'red-max')
+    csv_output << apply_optimization(bins, nil, partitions_master, nil, "#{heuristic}_#{optimization}", 'red-max')
 
 
   elsif optimization == 'red-max'
@@ -282,6 +288,9 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
       bins.update_bin_sizes!
     end
 
+    # Simple assertion
+    assert { partitions_master.total_sites == bins.total_sites }
+
     csv_output << bins.to_csv("#{heuristic}_#{optimization}")
 
   elsif optimization == 'adj-lmt'
@@ -314,12 +323,15 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
     bins.operations_lower_bound = backup_lower_bound
     bins.operations_rounding_adjustment = backup_rounding_adjustment
 
+    # Simple assertion
+    assert { partitions_master.total_sites == bins.total_sites }
+
     csv_output << bins.to_csv("#{heuristic}_#{optimization}")
 
 
     # Apply further optimizations on top
     ['low-src', 'red-max'].each do |further_optimization|
-      csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", further_optimization)
+      csv_output << apply_optimization(bins, nil, partitions_master, nil, "#{heuristic}_#{optimization}", further_optimization)
     end
 
   end
