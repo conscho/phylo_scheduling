@@ -3,7 +3,7 @@ library(grid)
 library(dplyr)
 
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
-ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 # Init for total summary of statistics
 totalSummary = data_frame()

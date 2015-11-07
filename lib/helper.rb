@@ -214,7 +214,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
   puts "Applying optimization #{optimization} for #{heuristic}"
   csv_output = []
 
-  if optimization == 'low-dep'
+  if optimization == 'low-src'
     bins = DeepClone.clone bins
 
       partitions_for_redistribution = PartitionArray.new()
@@ -310,7 +310,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
 
     # Apply further optimizations on top
-    ['low-dep', 'red-max'].each do |further_optimization|
+    ['low-src', 'red-max'].each do |further_optimization|
       csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", further_optimization)
     end
 

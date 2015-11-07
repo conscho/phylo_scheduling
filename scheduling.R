@@ -4,6 +4,7 @@ library(dplyr)
 
 
 ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = element_text(size = rel(0.9)))
+ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 # Init for total comparison of heuristics
 totalComparison = data_frame()
@@ -74,7 +75,7 @@ for (parameter.file in files) {
     geom_text(aes(0, op_optimized, label=paste("largest bin:\n", "operations: ", op_optimized, "\n", "savings: ", savings, "%", "\n", "splits: ", splits, sep=""), group=NULL), data=sumData, vjust=-0.3, hjust=0.1/max(combData$bin), color = "red", size=3) + 
     geom_line(aes(x=bin, y=lower_bound), color="red", data=rawData) +
     facet_grid(type~description, scales = "free_y") + 
-    ggplotTheme + ggplotTitle + ggplotRotateLabel
+    ggplotTheme + ggplotTitle
   ggsave(file=paste(graphFileName, " scheduling", ".pdf" , sep = ""), plot = gp, w=90, h=15, limitsize=FALSE)
   
   
@@ -91,11 +92,11 @@ for (parameter.file in files) {
   ggplotTitle = ggtitle(paste("Linechart scheduling: Relative difference of largest bin to lower bound", parametersTitle))
   gp = ggplot(sumData, aes(x=reorder(description, op_optimized_rel), y=graph_points, group=1)) + 
     xlab("heuristics") + ylab("relative difference to lower_bound") +
-    geom_line() + geom_point() +
+    geom_bar(stat = "identity") + 
     geom_text(aes(label = graph_points), vjust = +1.5, size = 3) +
     geom_line(aes(description, lower_bound_rel), color="red") +
     facet_wrap(~type, scales = "free_y", ncol=1) + 
-    ggplotTheme + ggplotTitle
+    ggplotTheme + ggplotTitle + ggplotRotateLabel
   ggsave(file=paste(graphFileName, " scheduling2", ".pdf" , sep = ""), plot = gp, w=25, h=10)
   
   
@@ -126,7 +127,7 @@ if(NROW(totalComparison) > 0) {
     geom_bar(stat = "identity") + 
     geom_text(aes(label = graph_points), vjust = +1, hjust=-.2, size = 3, angle=90) +
     facet_wrap(~type, ncol = 1, scales = "free_y") +
-    ggplotTheme + ggplotTitle
+    ggplotTheme + ggplotTitle + ggplotRotateLabel
   ggsave(file="graphs/comparison scheduling.pdf", plot = gp, w=20, h=8)
   
 }
