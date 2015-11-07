@@ -69,7 +69,7 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
   partitions.sort_by_site_range!
 
   # Remove duplicates per partition
-  all_sites = phylip_data.values.map {|taxa| taxa.split('') }.transpose
+  all_sites = phylip_data.values.map { |taxa| taxa.split('') }.transpose
   uniq_sites = partitions.map { |partition| all_sites[(partition.sites.first .. partition.sites.last)].uniq }
 
   # Calculate new array of sites that are in each partition
@@ -85,7 +85,7 @@ def drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, numb
   reduced_partitions = PartitionArray.new(Hash[partitions.names.zip(reduced_partitions_sites)])
 
   # Save phylip data
-  reduced_phylip_data = Hash[phylip_data.keys.zip(uniq_sites.flatten(1).transpose.map {|taxa| taxa.join})]
+  reduced_phylip_data = Hash[phylip_data.keys.zip(uniq_sites.flatten(1).transpose.map { |taxa| taxa.join })]
 
   # Save reduced data to disk
   reduced_partition_file = partition_file + '.uniq'
@@ -124,80 +124,84 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
                            bins.adapted_scheduling_initial!(partitions)
                          end
 
-  if heuristic.include?('odda')
-    bins.original_scheduling_fill!(remaining_partitions)
-    optimization_options = [] # Don't run optimization for the original scheduling algorithm
+  if remaining_partitions.empty?
+    puts "Reached perfect fit with pre-filling. No optimization possible."
+  else
+    if heuristic.include?('odda')
+      bins.original_scheduling_fill!(remaining_partitions)
+      optimization_options = [] # Don't run optimizations for the original scheduling algorithm
 
-  elsif heuristic.include?('grdtruth')
-    list_of_sites = partitions_master.map do |partition|
-      partition.sites.map {|i| {i => partition.name} }
-    end.flatten.compact
+    elsif heuristic.include?('grdtruth')
+      list_of_sites = partitions_master.map do |partition|
+        partition.sites.map { |i| {i => partition.name} }
+      end.flatten.compact
 
-    # Distribute to bins
-    puts "Distributing #{list_of_sites.size} sites to #{bins.list.size} bins"
-    distributions = list_of_sites.distribute_to_bins(bins.list.size).to_a
-    puts "Groundtruth: #{distributions.size} total possible distributions"
+      # Distribute to bins
+      puts "Distributing #{list_of_sites.size} sites to #{bins.list.size} bins"
+      distributions = list_of_sites.distribute_to_bins(bins.list.size).to_a
+      puts "Groundtruth: #{distributions.size} total possible distributions"
 
 
-    # Test each distribution and save best distribution
-    results = Parallel.map(distributions, :in_processes => 0, :progress => "Checking all distributions") do |distribution|
-      dist_operations_maximum = 0
-      dist_operations_optimized = 0
+      # Test each distribution and save best distribution
+      results = Parallel.map(distributions, :in_processes => 0, :progress => "Checking all distributions") do |distribution|
+        dist_operations_maximum = 0
+        dist_operations_optimized = 0
 
-      # Iterate over each bin of the current distribution
-      distribution.each_index do |bin_index|
-        bin_operations_maximum = 0
-        bin_operations_optimized = 0
+        # Iterate over each bin of the current distribution
+        distribution.each_index do |bin_index|
+          bin_operations_maximum = 0
+          bin_operations_optimized = 0
 
-        # Convert sites array to partitions array for current bin
-        distribution[bin_index] = distribution[bin_index].each_with_object(Hash.new([])) { |site, partitions| partitions[site.values[0]] = partitions[site.values[0]] + [site.keys[0]]}
+          # Convert sites array to partitions array for current bin
+          distribution[bin_index] = distribution[bin_index].each_with_object(Hash.new([])) { |site, partitions| partitions[site.values[0]] = partitions[site.values[0]] + [site.keys[0]] }
 
-        # Iterate over all partitions and add up operations for this bin
-        distribution[bin_index].each do |partition_name, partition_range|
-          result = tree_master.ml_operations!(partition_range)
-          bin_operations_maximum += result[:op_maximum]
-          bin_operations_optimized += result[:op_optimized]
+          # Iterate over all partitions and add up operations for this bin
+          distribution[bin_index].each do |partition_name, partition_range|
+            result = tree_master.ml_operations!(partition_range)
+            bin_operations_maximum += result[:op_maximum]
+            bin_operations_optimized += result[:op_optimized]
+          end
+
+          # Get the operations count for the largest bin of the current distribution -> bottleneck
+          if bin_operations_optimized > dist_operations_optimized
+            dist_operations_optimized = bin_operations_optimized
+            dist_operations_maximum = bin_operations_maximum
+          end
+
         end
 
-        # Get the operations count for the largest bin of the current distribution -> bottleneck
-        if bin_operations_optimized > dist_operations_optimized
-          dist_operations_optimized = bin_operations_optimized
-          dist_operations_maximum = bin_operations_maximum
-        end
-
+        [dist_operations_optimized, dist_operations_maximum, distribution]
       end
 
-      [dist_operations_optimized, dist_operations_maximum, distribution]
+      minimum = results.min_by(&:first)
+
+      bins = BinArray.new(bins.list.size)
+      bins.set_lower_bound!(partitions_master)
+      minimum[2].each_with_index do |bin, bin_index|
+        bins.list[bin_index].add!(PartitionArray.new(bin).add_tree!(tree_master))
+      end
+
+      optimization_options = [] # Don't run optimization for the groundtruth
+
+    elsif heuristic.include?('grdy')
+      bins.greedy1_initial!(remaining_partitions)
+      bins.greedy1_fill!(remaining_partitions)
+      optimization_options = Array.new(optimization_options).push('adj-lmt')
+
+    elsif heuristic.include?('grdy2')
+      bins.greedy2_fill!(remaining_partitions)
+
+    elsif heuristic.include?('grdy3')
+      bins.greedy3_fill!(remaining_partitions)
+
+    elsif heuristic.include?('slice')
+      bins.slice_fill!(remaining_partitions)
+
+    elsif heuristic.include?('cut')
+      bins.cut_fill!(remaining_partitions)
+      optimization_options = Array.new(optimization_options).push('adj-lmt')
+
     end
-
-    minimum = results.min_by(&:first)
-
-    bins = BinArray.new(bins.list.size)
-    bins.set_lower_bound!(partitions_master)
-    minimum[2].each_with_index do |bin, bin_index|
-      bins.list[bin_index].add!(PartitionArray.new(bin).add_tree!(tree_master))
-    end
-
-    optimization_options = [] # Don't run optimization for the groundtruth
-
-  elsif heuristic.include?('grdy')
-    bins.greedy1_initial!(remaining_partitions)
-    bins.greedy1_fill!(remaining_partitions)
-    optimization_options = Array.new(optimization_options).push('adj-lmt')
-
-  elsif heuristic.include?('grdy2')
-    bins.greedy2_fill!(remaining_partitions)
-
-  elsif heuristic.include?('grdy3')
-    bins.greedy3_fill!(remaining_partitions)
-
-  elsif heuristic.include?('slice')
-    bins.slice_fill!(remaining_partitions)
-
-  elsif heuristic.include?('cut')
-    bins.cut_fill!(remaining_partitions)
-    optimization_options = Array.new(optimization_options).push('adj-lmt')
-
   end
 
   csv_output << bins.to_csv(heuristic)
@@ -217,29 +221,29 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
   if optimization == 'low-src'
     bins = DeepClone.clone bins
 
-      partitions_for_redistribution = PartitionArray.new()
-      # Get split partitions
-      split_partition_names = bins.split_partitions
+    partitions_for_redistribution = PartitionArray.new()
+    # Get split partitions
+    split_partition_names = bins.split_partitions
 
-      bins.each do |bin|
-        # Get split partitions per bin
-        bin.find_partitions(split_partition_names).each do |split_partition|
-          # Get bottom 20% (but at least a count of 10 sites; leave at least one site behind) sites sorted by dependencies count
-          site_dependencies = split_partition.get_site_dependencies_count
-          min_sites = Hash[site_dependencies.min_by([site_dependencies.size / 5, [(site_dependencies.size - 1), 10].min].max) {|site, count| count}].keys
-          partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
-          # Delete partition if all sites will be redistributed
-          bin.delete!(split_partition) if split_partition.empty?
-        end
+    bins.each do |bin|
+      # Get split partitions per bin
+      bin.find_partitions(split_partition_names).each do |split_partition|
+        # Get bottom 20% (but at least a count of 10 sites; leave at least one site behind) sites sorted by dependencies count
+        site_dependencies = split_partition.get_site_dependencies_count
+        min_sites = Hash[site_dependencies.min_by([site_dependencies.size / 5, [(site_dependencies.size - 1), 10].min].max) { |site, count| count }].keys
+        partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
+        # Delete partition if all sites will be redistributed
+        bin.delete!(split_partition) if split_partition.empty?
       end
-      # Define current bins average as lower bound
-      backup_lower_bound = bins.operations_lower_bound
-      bins.operations_lower_bound = bins.average_bin_size
-      # Execute greedy 1
-      bins.greedy1_fill!(partitions_for_redistribution)
-      bins.operations_lower_bound = backup_lower_bound
+    end
+    # Define current bins average as lower bound
+    backup_lower_bound = bins.operations_lower_bound
+    bins.operations_lower_bound = bins.average_bin_size
+    # Execute greedy 1
+    bins.greedy1_fill!(partitions_for_redistribution)
+    bins.operations_lower_bound = backup_lower_bound
 
-      csv_output << bins.to_csv("#{heuristic}_#{optimization}")
+    csv_output << bins.to_csv("#{heuristic}_#{optimization}")
 
     csv_output << apply_optimization(bins, nil, nil, nil, "#{heuristic}_#{optimization}", 'red-max')
 
@@ -265,8 +269,8 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
           n = ((bins.average_bin_size - bin.size).to_f / bins.operations_worst_case).ceil
 
           # Move n sites with minimum dependencies to that bin
-          min_sites = Hash[site_dependencies.min_by(n) {|site, count| count}].keys
-          min_sites.each {|site| site_dependencies.delete(site)}
+          min_sites = Hash[site_dependencies.min_by(n) { |site, count| count }].keys
+          min_sites.each { |site| site_dependencies.delete(site) }
           partition.delete_specific_sites!(min_sites)
           bin.add!([Partition.new(partition.name, min_sites, partition.tree, compute = false)])
           if partition.empty?
@@ -295,11 +299,15 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     # Rerun respective heuristic
     remaining_partitions = bins.adapted_scheduling_initial!(partitions)
-    if heuristic.include?('grdy')
-      bins.greedy1_initial!(remaining_partitions)
-      bins.greedy1_fill!(remaining_partitions)
-    elsif heuristic.include?('cut')
-      bins.cut_fill!(remaining_partitions)
+    if remaining_partitions.empty?
+      puts "Reached perfect fit with #{optimization} optimization and pre-filling."
+    else
+      if heuristic.include?('grdy')
+        bins.greedy1_initial!(remaining_partitions)
+        bins.greedy1_fill!(remaining_partitions)
+      elsif heuristic.include?('cut')
+        bins.cut_fill!(remaining_partitions)
+      end
     end
 
     # Restore original lower_bound

@@ -45,7 +45,7 @@ class BinArray
     site_index = 0
     partition_index = 0
     total_sites_remaining = remaining_partitions.total_sites
-    return if total_sites_remaining == 0 # If remaining_partition is empty return instantly
+    
 
     total_free_space = self.total_free_space
 
