@@ -52,6 +52,13 @@ class Partition
   end
 
   def get_site_dependencies_count
+    # Get a clean copy of the tree and rerun ml_operations since we do not know what was stored in the tree before
+    unless @tree_cloned
+      @tree = DeepClone.clone @tree
+      @tree_cloned = true
+      self.ml_operations!
+    end
+
     dependencies_count = @tree.site_dependencies_count
     @sites.map {|site| [site, 0]}.to_h.merge(dependencies_count)
   end
@@ -73,7 +80,7 @@ class Partition
   # Add sites to partition and calculate the operations.
   def incr_add_sites!(sites, simulate = false)
     # Get a clean copy of the tree and rerun ml_operations since we do not know what was stored in the tree before
-    if @tree_cloned == false
+    unless @tree_cloned
       @tree = DeepClone.clone @tree
       @tree_cloned = true
       self.ml_operations!
@@ -127,11 +134,17 @@ class Partition
     Partition.new(@name, sites, @tree, compute = false) if return_partition
   end
 
-  # Delete (determinisitc) random site in partition without updating operations
+  # Drop random site in partition without updating operations. Return new partition with this site.
   def drop_random_site!
     dropped_site = @sites.sample
     @sites.delete(dropped_site)
     return Partition.new(@name, [dropped_site], @tree)
+  end
+
+  # Drop specific site in partition without updating operations. Return new partition with this site.
+  def drop_specific_site!(site)
+    @sites.delete(site)
+    return Partition.new(@name, [site], @tree)
   end
 
   # Delete site with given index from partition and return it

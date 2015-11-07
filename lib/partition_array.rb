@@ -137,6 +137,7 @@ class PartitionArray
       end
 
     end
+
     return dropped_partitions
   end
 

@@ -184,7 +184,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
       optimization_options = [] # Don't run optimization for the groundtruth
 
     elsif heuristic.include?('grdy')
-      bins.greedy1_initial!(remaining_partitions)
+      bins.greedy1_initial_alt!(remaining_partitions)
       bins.greedy1_fill!(remaining_partitions)
       optimization_options = Array.new(optimization_options).push('adj-lmt')
 
@@ -233,7 +233,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
       bin.find_partitions(split_partition_names).each do |split_partition|
         # Get bottom 20% (but at least a count of 10 sites; leave at least one site behind) sites sorted by dependencies count
         site_dependencies = split_partition.get_site_dependencies_count
-        min_sites = Hash[site_dependencies.min_by([site_dependencies.size / 5, [(site_dependencies.size - 1), 10].min].max) { |site, count| count }].keys
+        min_sites = Hash[site_dependencies.min_by([[(site_dependencies.size - 1), 10].min, site_dependencies.size / 5].max) { |site, count| count }].keys
         partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
         # Delete partition if all sites will be redistributed
         bin.delete!(split_partition) if split_partition.empty?
@@ -312,7 +312,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
       puts "Reached perfect fit with #{optimization} optimization and pre-filling."
     else
       if heuristic.include?('grdy')
-        bins.greedy1_initial!(remaining_partitions)
+        bins.greedy1_initial_alt!(remaining_partitions)
         bins.greedy1_fill!(remaining_partitions)
       elsif heuristic.include?('cut')
         bins.cut_fill!(remaining_partitions)
