@@ -81,7 +81,7 @@ class BinArray
   # Fill one site of each partition into its assigned bin. Alternative approach.
   def greedy1_initial_alt!(remaining_partitions)
 
-    virtual_assignment = DeepClone.clone remaining_partitions
+    virtual_remaining_partitions = DeepClone.clone remaining_partitions
 
     total_sites_remaining = remaining_partitions.total_sites
     total_free_space = self.total_free_space
@@ -93,8 +93,7 @@ class BinArray
       sites_for_bin = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_sites_remaining).ceil
 
       # Get partitions that need to go into the current virtual bin
-      dropped_partitions = virtual_assignment.drop_sites!(sites_for_bin, compute = false)
-
+      dropped_partitions = virtual_remaining_partitions.drop_sites!(sites_for_bin, compute = false)
 
       dropped_partitions.each do |partition|
         # Get site in the middle of partition
