@@ -234,11 +234,10 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
         # Get bottom 20% (but at least a count of 10 sites; leave at least one site behind) sites sorted by dependencies count
         site_dependencies = split_partition.get_site_dependencies_count
         min_sites = Hash[site_dependencies.min_by([[(site_dependencies.size - 1), 10].min, site_dependencies.size / 5].max) { |site, count| count }].keys
-        partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true)
-        # Delete partition if all sites will be redistributed
-        bin.delete!(split_partition) if split_partition.empty?
+        partitions_for_redistribution.add!(split_partition.delete_specific_sites!(min_sites, true), dirty = true) unless min_sites.empty?
       end
     end
+
     # Define current bins average as lower bound
     backup_lower_bound = bins.operations_lower_bound
     bins.operations_lower_bound = bins.average_bin_size
@@ -276,8 +275,10 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
           # Move n sites with minimum dependencies to that bin
           min_sites = Hash[site_dependencies.min_by(n) { |site, count| count }].keys
+          # Remove dependencies for the min_sites so we don't have to recalculate them
           min_sites.each { |site| site_dependencies.delete(site) }
           partition.delete_specific_sites!(min_sites)
+
           bin.add!([Partition.new(partition.name, min_sites, partition.tree, compute = false)])
           if partition.empty?
             max_bin.delete!(partition)
