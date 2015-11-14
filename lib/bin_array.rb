@@ -8,7 +8,7 @@ class BinArray
   attr_reader :operations_worst_case
 
   def initialize(number_of_bins)
-    @list = Array.new(number_of_bins) {Bin.new}
+    @list = Array.new(number_of_bins) { Bin.new }
   end
 
   # Distribute partitions to bins similar like the original scheduling algorithm:
@@ -106,6 +106,41 @@ class BinArray
     end
   end
 
+  # Fill one site of each partition into its assigned bin. Alternative approach.
+  def greedy1_initial_alt2!(remaining_partitions)
+
+    virtual_remaining_partitions = DeepClone.clone remaining_partitions
+
+    # Fill each bin starting with the least filled
+    self.sort.each_with_index do |bin, bin_index|
+
+      free_space = (@operations_lower_bound - bin.size)
+
+      # condition can be equal since the first remaining partition might be split
+      dropped_partitions = if virtual_remaining_partitions.first.op_optimized == free_space || (virtual_remaining_partitions.size == 1 && virtual_remaining_partitions.first.op_optimized <= free_space)
+                             virtual_remaining_partitions.drop!(1)
+                           elsif virtual_remaining_partitions.first.op_optimized < free_space
+                             partition = virtual_remaining_partitions.drop!(1).first
+                             space_per_site = (virtual_remaining_partitions.first.op_optimized / virtual_remaining_partitions.first.sites.size).floor
+                             [partition,
+                              virtual_remaining_partitions.drop_sites!(((free_space - partition.op_optimized).to_f/space_per_site).ceil, compute = false)]
+                           else
+                             space_per_site = (virtual_remaining_partitions.first.op_optimized / virtual_remaining_partitions.first.sites.size).floor
+                             virtual_remaining_partitions.drop_sites!((free_space.to_f/space_per_site).ceil, compute = false)
+                           end
+
+      # Phase 2: Add site in the middle of each partition to the bin
+      dropped_partitions.each do |partition|
+        # Get site in the middle of partition
+        mid_site = partition.sites[partition.sites.size / 2]
+
+        # Actual assignment of site
+        dropped_partition = remaining_partitions.list[partition.name].drop_specific_site!(mid_site)
+        bin.add!([dropped_partition])
+      end
+    end
+  end
+
   # Fill remaining sites where operations are minimal
   def greedy1_fill!(remaining_partitions)
     remaining_partitions.each do |src_partition|
@@ -135,9 +170,9 @@ class BinArray
 
         # Insert at lowest operation cost
         best = if simulation_result_below_bound.empty?
-                 simulation_result_above_bound.min_by {|operations, bin_index| operations}
+                 simulation_result_above_bound.min_by { |operations, bin_index| operations }
                else
-                 simulation_result_below_bound.min_by {|operations, bin_index| operations}
+                 simulation_result_below_bound.min_by { |operations, bin_index| operations }
                end
         target_partition = @list[best[1]].list[src_partition.name]
         if target_partition.nil?
@@ -170,7 +205,7 @@ class BinArray
 
   def greedy3_fill!(remaining_partitions)
     # Initialize index for site selection for each partition in "remaining_partitions"
-    partition_indexes = Hash[remaining_partitions.map {|partition| [partition.name, {index: 0, sites: partition.sites.size}]}]
+    partition_indexes = Hash[remaining_partitions.map { |partition| [partition.name, {index: 0, sites: partition.sites.size}] }]
 
     until partition_indexes.empty?
 
@@ -182,7 +217,7 @@ class BinArray
         operations = if target_partition.nil?
                        Float::INFINITY
                      else
-                       target_partition.incr_add_sites!( [ remaining_partitions.list[partition_name].sites[values[:index]] ], true )
+                       target_partition.incr_add_sites!([remaining_partitions.list[partition_name].sites[values[:index]]], true)
                      end
 
         # Save the partitions with minimal operations
@@ -206,7 +241,7 @@ class BinArray
                                          [remaining_partitions.list[max_partition_name].sites[partition_indexes[max_partition_name][:index]]],
                                          remaining_partitions.list[max_partition_name].tree)])
       else
-        target_partition.incr_add_sites!( [ remaining_partitions.list[max_partition_name].sites[partition_indexes[max_partition_name][:index]] ] )
+        target_partition.incr_add_sites!([remaining_partitions.list[max_partition_name].sites[partition_indexes[max_partition_name][:index]]])
       end
 
       # Get next site or remove partition entry if all sites of partition already distributed
@@ -256,7 +291,6 @@ class BinArray
   end
 
 
-
   # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
   def original_scheduling_initial!(partitions)
     # Phase 1: Sort partitions by sites.size
@@ -289,7 +323,7 @@ class BinArray
     # Phase 3: Partitioning
     # Fill each bin starting with the least filled
     full_bins = 0 # FIXME: Sloppy implementation. Should get value from initial.
-    self.sort_by {|bin| bin.total_sites}.each do |bin|
+    self.sort_by { |bin| bin.total_sites }.each do |bin|
 
       # How many sites need to go into the current bin
       number_of_sites = @sites_lower_bound - bin.total_sites
@@ -306,20 +340,17 @@ class BinArray
   end
 
 
-
-
-
   # Get the names of the partitions that are split
   # @return [array of names]
   def split_partitions
     partition_names = @list.map { |bin| bin.partition_names }.flatten
-    partition_names.select {|name| partition_names.index(name) != partition_names.rindex(name)}.uniq
+    partition_names.select { |name| partition_names.index(name) != partition_names.rindex(name) }.uniq
   end
 
   # Get bins that have the specified "partition_name" in them
   # @return [array of bin objects]
   def bins_with_partition(partition_name)
-    @list.select {|bin| bin.has_partition?(partition_name)}
+    @list.select { |bin| bin.has_partition?(partition_name) }
   end
 
   # Set lower bound for operations and sites
@@ -336,7 +367,7 @@ class BinArray
 
   # Total operations of all bins
   def size
-    @list.map {|bin| bin.size}.reduce(0, :+)
+    @list.map { |bin| bin.size }.reduce(0, :+)
   end
 
   def average_bin_size
@@ -362,12 +393,12 @@ class BinArray
 
   # How many sites are there in total over all bins
   def total_sites
-    @list.map {|bin| bin.total_sites}.reduce(0, :+)
+    @list.map { |bin| bin.total_sites }.reduce(0, :+)
   end
 
   def to_s(option = "none")
     string = "["
-    @list.each_with_index {|bin, bin_index| string += "(bin#{bin_index}: #{bin.to_s(option)}), "}
+    @list.each_with_index { |bin, bin_index| string += "(bin#{bin_index}: #{bin.to_s(option)}), " }
     if string.size > 1
       string[0..-3] + "]"
     else
@@ -377,7 +408,7 @@ class BinArray
 
   def to_csv(description)
     # Iterate over all partitions and add up operations for this bin
-    self.each_with_index.map {|bin, bin_index| bin.to_csv({description: description, bin: bin_index, lower_bound: @operations_lower_bound}) }.flatten
+    self.each_with_index.map { |bin, bin_index| bin.to_csv({description: description, bin: bin_index, lower_bound: @operations_lower_bound}) }.flatten
   end
 
   def each(&block)

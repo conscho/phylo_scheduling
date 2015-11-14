@@ -149,6 +149,11 @@ class PartitionArray
     end]
   end
 
+  # return first partition in @list
+  def first
+    @list.values.first
+  end
+
   # In-place sorting after "op_optimized"
   def sort!
     @list = Hash[@list.sort_by {|partition_name, partition| partition}]

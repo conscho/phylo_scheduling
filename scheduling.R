@@ -93,7 +93,7 @@ for (parameter.file in files) {
   gp = ggplot(sumData, aes(x=reorder(description, op_optimized_rel), y=graph_points, group=1)) + 
     xlab("heuristics") + ylab("relative difference to lower_bound") +
     geom_bar(stat = "identity") + 
-    geom_text(aes(label = graph_points), vjust = +1.5, size = 3) +
+    geom_text(aes(label = graph_points), vjust = +1.5, size = 3, color="white") +
     geom_line(aes(description, lower_bound_rel), color="red") +
     facet_wrap(~type, scales = "free_y", ncol=1) + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
