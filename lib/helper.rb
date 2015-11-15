@@ -263,6 +263,8 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
       # Get split partitions in the largest bin
       max_bin.find_partitions(split_partition_names).each do |partition|
+        next if bins.average_bin_size >= max_bin.size
+
         # Get sites and their dependency count
         site_dependencies = partition.get_site_dependencies_count
 
@@ -285,8 +287,8 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
             break
           end
         end
+        bins.update_bin_sizes!
       end
-      bins.update_bin_sizes!
     end
 
     # Simple assertion
