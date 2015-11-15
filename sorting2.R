@@ -8,7 +8,7 @@ ggplotTheme = theme(plot.margin = unit(c(1,1,1,1), "lines"), plot.title = elemen
 ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
-files <- list.files("output_sorting", pattern = "*parameters.csv", full.names = TRUE)
+files <- list.files("output_sorting2", pattern = "*parameters.csv", full.names = TRUE)
 for (parameter.file in files) {
   
   programParameters = read.csv(parameter.file)
@@ -38,7 +38,7 @@ for (parameter.file in files) {
     #geom_line(aes(x=bin, y=lower_bound), color="red", data=rawData) +
     #facet_wrap(~partition, ncol = 1, scales = "free_y") + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " sorting", ".pdf" , sep = ""), plot = gp, w=10, h=10)
+  ggsave(file=paste(graphFileName, " sorting2", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
   
   
