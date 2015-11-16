@@ -1,0 +1,122 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'thor'
+require 'parallel'
+require 'fileutils'
+require 'pp'
+require 'ruby-progressbar'
+#require 'Newick' # Some problem with including the forked gem
+require 'require_all'
+require 'deep_clone'
+#require 'stackprof' # Used for profiling
+require 'matrix'
+
+require_all 'lib'
+
+
+class Sorting < Thor
+  desc 'generate', 'Empirical proof for sorting effect based on RAxML trace'
+  option :topology_file, :required => true, :aliases => "-T",
+         :desc => "Which RAxML trace topology file should be evaluated. " \
+                  "Example: '-t ./data/trace/101.trace.topo' "
+  option :phylip_file, :required => true, :aliases => '-l',
+         :desc => 'Path to phylip file ' \
+                  "Example: '-l ./data/trace/101.phy' "
+  option :number_of_processes, :type => :numeric, :default => 4, :aliases => "-P",
+         :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
+                  "Example: '-P 4' "
+  option :sample_trees, :default => 100, :aliases => "-t",
+         :desc => "Enter the amount of trees that should be used for statistics. " \
+                  "Example: '-t 12' "
+
+
+  def generate
+
+    # Initialize
+    phylip_file = options[:phylip_file]
+    sample_root = 'midpoint'
+    csv_output = []
+    start_time = Time.now
+    number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
+    graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join('-')} #{start_time.strftime '%Y-%m-%d %H-%M-%S'}"
+    # Dummy partitions
+    partitions = PartitionArray.new({dummy: (0 .. (number_of_sites - 1)).to_a})
+
+    puts "Program started at #{start_time}"
+    puts "Using parameters: topology_file: #{options[:topology_file]}; " \
+         "Phylip File: #{phylip_file}; " \
+         "Sample root nodes: #{sample_root}; Sample trees: #{options[:sample_trees]}; " \
+         "Number of taxa: #{number_of_taxa}; Number of sites: #{number_of_sites}; " \
+         "Running on #{options[:number_of_processes]} processors"
+
+    load_file = File.new(options[:topology_file])
+
+    csv_output << Parallel.map(load_file.first(options[:sample_trees]), :in_processes => options[:number_of_processes], :progress => "Analysing #{options[:sample_trees]} trees") do |line|
+
+      # Initialize
+      tree_output = []
+
+      # Get data
+      tree = NewickTree.new(line.chomp)
+      tree = tree.add_dna_sequences(phylip_data)
+
+      # Midpoint root
+      tree.set_edge_length!.midpointRoot
+
+
+      # Original sorting of sites
+      # Get accumulated distance between consecutive sites
+      total_distance = 0
+      partitions.each do |partition|
+        partition.sites.first(partition.sites.size - 1).each do |site|
+          total_distance += tree.ml_operations!([site, site + 1])[:op_optimized]
+        end
+      end
+      tree_output << {distance: total_distance, sort: "original"}
+
+      # Lexicographic sorting of sites
+      tree.lexi_sort!(partitions)
+      total_distance = 0
+      partitions.each do |partition|
+        partition.sites.first(partition.sites.size - 1).each do |site|
+          total_distance += tree.ml_operations!([site, site + 1])[:op_optimized]
+        end
+      end
+      tree_output << {distance: total_distance, sort: "lxi"}
+
+      tree_output
+    end
+
+
+    program_runtime = (Time.now - start_time).duration
+
+    # Check if output folder exists
+    output_directory = "./output_#{File.basename(__FILE__, '.rb')}"
+    FileUtils.mkdir_p(output_directory)
+
+    # Output results to CSV for R
+    data_file = "#{output_directory}/#{start_time.strftime '%Y-%m-%d %H-%M-%S'} data.csv"
+    puts "Writing data to #{data_file}"
+    csv_output.flatten.array_of_hashes_to_csv_file(data_file)
+
+
+    # Output parameters to CSV for R
+    program_parameters_output = {phylip_file: phylip_file, sample_root: sample_root, sample_trees: options[:sample_trees],
+                                 program_runtime: program_runtime, data_file: data_file,
+                                 graph_file_name: graph_file_name
+    }
+
+    parameter_file = "#{output_directory}/#{start_time.strftime '%Y-%m-%d %H-%M-%S'} parameters.csv"
+    program_parameters_output.to_csv_file(parameter_file)
+    puts "Program parameters written to #{parameter_file}"
+    puts "Run corresponding R script '#{File.basename(__FILE__, '.rb')}.R' to generate graphs"
+
+    puts "Program finished at #{Time.now}. Runtime: #{program_runtime}"
+
+
+  end
+
+end
+
+Sorting.start
