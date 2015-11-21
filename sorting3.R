@@ -11,7 +11,7 @@ ggplotRotateLabel = theme(axis.text.x = element_text(angle = 90, hjust = 1, vjus
 totalComparison = data_frame()
 
 
-files <- list.files("output_sorting1", pattern = "*parameters.csv", full.names = TRUE)
+files <- list.files("output_sorting3", pattern = "*parameters.csv", full.names = TRUE)
 for (parameter.file in files) {
   
   programParameters = read.csv(parameter.file)
@@ -37,7 +37,7 @@ for (parameter.file in files) {
     xlab("Sorting technique") + ylab("PLF-C Distance between consecutive sites") +
     geom_boxplot() + 
     ggplotTheme + ggplotTitle + ggplotRotateLabel
-  ggsave(file=paste(graphFileName, " sorting1", ".pdf" , sep = ""), plot = gp, w=10, h=10)
+  ggsave(file=paste(graphFileName, " sorting3", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
   
 }
@@ -54,4 +54,4 @@ gp = ggplot(sumData, aes(sort, mean_distance)) +
   geom_bar(stat = "identity") + 
   geom_text(data = textData, aes(x=1, y=mean_distance, label = paste(percentage, " % difference"))) +
   ggplotTheme #+ ggplotRotateLabel
-ggsave(file=paste("graphs/sorting1 summary", ".pdf" , sep = ""), plot = gp, w=7, h=5)
+ggsave(file=paste("graphs/sorting3 summary", ".pdf" , sep = ""), plot = gp, w=6, h=5)

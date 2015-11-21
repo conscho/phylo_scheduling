@@ -16,7 +16,7 @@ require_all 'lib'
 
 
 class Sorting < Thor
-  desc 'generate', 'Empirical proof for sorting effect'
+  desc 'generate', 'Empirical proof for sorting effect on RAxML output trees'
   option :batches, :type => :hash, :required => true, :aliases => "-b",
          :desc => "Which batches of trees you want to compare. " \
                   "Example: '-b pars:./data/7/parsimony_trees/*parsimonyTree* rand_ml:./data/7/random_trees/*result*' "

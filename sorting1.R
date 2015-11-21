@@ -49,16 +49,15 @@ for (parameter.file in files) {
 }
 
 sumData <- totalComparison %>%
-  group_by(sort, batch) %>%
+  group_by(sort) %>%
   summarise(mean_distance = mean(distance))
 
 textData <- sumData %>%
-  group_by(batch) %>%
   summarise(percentage = (round(max(mean_distance)/min(mean_distance), 4) - 1) * 100, mean_distance = mean(mean_distance))
   
-gp = ggplot(sumData, aes(batch, mean_distance)) + 
+gp = ggplot(sumData, aes(sort, mean_distance)) + 
   xlab("Batch") + ylab("PLF-C Distance between consecutive sites") +
-  geom_bar(aes(fill = sort), stat="identity", position = "dodge") + 
-  geom_text(data = textData, aes(x=batch, y=mean_distance, label = paste(percentage, " % difference"))) +
+  geom_bar(stat="identity", position = "dodge") + 
+  geom_text(data = textData, aes(x=1, y=mean_distance, label = paste(percentage, " % difference"))) +
   ggplotTheme + ggplotRotateLabel
-ggsave(file=paste("graphs/sorting1 summary", ".pdf" , sep = ""), plot = gp, w=7, h=5)
+ggsave(file=paste("graphs/sorting1 summary", ".pdf" , sep = ""), plot = gp, w=6, h=5)
