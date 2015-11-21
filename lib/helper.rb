@@ -184,7 +184,7 @@ def apply_heuristic(heuristic, optimization_options, bins_master, partitions_mas
       optimization_options = [] # Don't run optimization for the groundtruth
 
     elsif heuristic.include?('grdy')
-      bins.greedy1_initial_alt2!(remaining_partitions)
+      remaining_partitions = bins.greedy1_initial_alt3!(remaining_partitions)
       bins.greedy1_fill!(remaining_partitions)
       optimization_options = Array.new(optimization_options).push('adj-lmt')
 
@@ -315,7 +315,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
       puts "Reached perfect fit with #{optimization} optimization and pre-filling."
     else
       if heuristic.include?('grdy')
-        bins.greedy1_initial_alt2!(remaining_partitions)
+        remaining_partitions = bins.greedy1_initial_alt3!(remaining_partitions)
         bins.greedy1_fill!(remaining_partitions)
       elsif heuristic.include?('cut')
         bins.cut_fill!(remaining_partitions)

@@ -34,6 +34,7 @@ class BinArray
 
       bin_index = (bin_index + 1) % @list.size
     end
+    @list = @list.sort
 
     partitions
   end
@@ -50,7 +51,7 @@ class BinArray
     total_free_space = self.total_free_space
 
     # Fill each bin starting with the least filled
-    self.sort.each_with_index do |bin, bin_index|
+    self.each_with_index do |bin, bin_index|
 
       # How many sites need to go into the current bin
       sites_for_bin = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_sites_remaining).floor
@@ -76,6 +77,8 @@ class BinArray
 
       site_index += sites_for_bin
     end
+
+    remaining_partitions
   end
 
   # Fill one site of each partition into its assigned bin. Alternative approach.
@@ -87,7 +90,7 @@ class BinArray
     total_free_space = self.total_free_space
 
     # Fill each bin starting with the least filled
-    self.sort.each_with_index do |bin, bin_index|
+    self.each_with_index do |bin, bin_index|
 
       # How many sites need to go into the current virtual bin
       sites_for_bin = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_sites_remaining).ceil
@@ -104,6 +107,38 @@ class BinArray
         bin.add!([dropped_partition])
       end
     end
+
+    remaining_partitions
+  end
+
+  # Fill one site of each partition into its assigned bin. Alternative approach.
+  def greedy1_initial_alt3!(remaining_partitions)
+    bin_index = 0
+    virtual_size = 0
+    remaining_partitions.each do |partition|
+      average_site_size = partition.size / partition.sites.size
+      z = 1
+      while z <= partition.sites.size && bin_index < @list.size
+        z_prime = ((@operations_lower_bound - @list[bin_index].size - virtual_size).to_f/average_site_size).ceil
+        if z + z_prime + 1 > partition.sites.size
+          z_prime = partition.sites.size - z + 1
+          bin_is_full = false
+          virtual_size = z_prime * average_site_size - @operations_worst_case
+        else
+          bin_is_full = true
+          virtual_size = 0
+        end
+
+        # Assign site to bin
+        mid_site = partition.sites[z + z_prime / 2 - 1]
+        dropped_partition = partition.drop_specific_site!(mid_site)
+        @list[bin_index].add!([dropped_partition])
+
+        z += z_prime - 1
+        bin_index += 1 if bin_is_full
+      end
+    end
+    remaining_partitions
   end
 
   # Fill one site of each partition into its assigned bin. Alternative approach.
@@ -111,21 +146,25 @@ class BinArray
 
     virtual_remaining_partitions = DeepClone.clone remaining_partitions
 
+    sites_in_current_partition = 0
     # Fill each bin starting with the least filled
-    self.sort.each_with_index do |bin, bin_index|
+    self.each_with_index do |bin, bin_index|
 
       free_space = (@operations_lower_bound - bin.size)
 
       # condition can be equal since the first remaining partition might be split
       dropped_partitions = if virtual_remaining_partitions.first.op_optimized == free_space || (virtual_remaining_partitions.size == 1 && virtual_remaining_partitions.first.op_optimized <= free_space)
                              virtual_remaining_partitions.drop!(1)
+                             sites_in_current_partition = 0
                            elsif virtual_remaining_partitions.first.op_optimized < free_space
                              partition = virtual_remaining_partitions.drop!(1).first
-                             space_per_site = (virtual_remaining_partitions.first.op_optimized / virtual_remaining_partitions.first.sites.size).floor
+                             sites_in_current_partition = virtual_remaining_partitions.first.sites.size
+                             space_per_site = (virtual_remaining_partitions.first.op_optimized / sites_in_current_partition).floor
                              [partition,
                               virtual_remaining_partitions.drop_sites!(((free_space - partition.op_optimized).to_f/space_per_site).ceil, compute = false)]
                            else
-                             space_per_site = (virtual_remaining_partitions.first.op_optimized / virtual_remaining_partitions.first.sites.size).floor
+                             sites_in_current_partition = virtual_remaining_partitions.first.sites.size if sites_in_current_partition == 0
+                             space_per_site = (virtual_remaining_partitions.first.op_optimized / sites_in_current_partition).floor
                              virtual_remaining_partitions.drop_sites!((free_space.to_f/space_per_site).ceil, compute = false)
                            end
 
@@ -139,6 +178,8 @@ class BinArray
         bin.add!([dropped_partition])
       end
     end
+
+    remaining_partitions
   end
 
   # Fill remaining sites where operations are minimal
@@ -256,7 +297,7 @@ class BinArray
   # Get ratio of free space for each bin, then fill remaining partitions based on this ratio and the operations left
   def cut_fill!(remaining_partitions)
     # Fill each bin starting with the least filled
-    self.sort.each do |bin|
+    self.each do |bin|
       # Total number of operations that need to go into this bin
       total_operations_remaining = remaining_partitions.op_optimized_size
       total_free_space = self.total_free_space
@@ -279,7 +320,7 @@ class BinArray
     total_free_space = self.total_free_space
 
     # Fill each bin starting with the least filled
-    self.sort.each do |bin|
+    self.each do |bin|
 
       # How many sites need to go into the current bin
       number_of_sites = ((@operations_lower_bound - bin.size).to_f / total_free_space * total_sites_remaining).ceil # FIXME: It's probably better to round down and save overflow in last bin
