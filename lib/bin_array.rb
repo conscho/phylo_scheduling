@@ -363,7 +363,6 @@ class BinArray
   def original_scheduling_fill!(remaining_partitions)
     # Phase 3: Partitioning
     # Fill each bin starting with the least filled
-    full_bins = 0 # FIXME: Sloppy implementation. Should get value from initial.
     self.sort_by { |bin| bin.total_sites }.each do |bin|
 
       # How many sites need to go into the current bin
@@ -373,10 +372,7 @@ class BinArray
       dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
       bin.add!(dropped_partitions)
 
-      # Exact fit
-      full_bins += 1
-      @sites_lower_bound -= 1 if full_bins == @list.size - @sites_rounding_adjustment
-
+      # FIXME: Exact fit edge case
     end
   end
 
