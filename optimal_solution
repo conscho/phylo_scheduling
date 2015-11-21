@@ -6,14 +6,9 @@ require 'parallel'
 require 'fileutils'
 require 'pp'
 require 'ruby-progressbar'
+require 'require_all'
 
-require './lib/helper'
-require './lib/newick'
-require './lib/multi_io'
-require './lib/numeric'
-require './lib/array'
-require './lib/hash'
-require './lib/partition_array'
+require_all 'lib'
 
 
 class OptimalSolution < Thor
@@ -34,11 +29,15 @@ class OptimalSolution < Thor
          :desc => "Crop the datafile to x partitions. " \
                   "Example: '-n 3' "
   option :crop_sites_per_partition, :type => :numeric, :default => 5, :aliases => "-s",
-         :desc => "Crop the number of sites in each partition to x. Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12 " \
+         :desc => "Crop the number of sites in each partition to x. Random number between 0 and 2 gets subtracted. " \
+                  "Recommended maximum bins to total sites: 2-20 | 3-14 | 4-12 " \
                   "Example: '-s 7' "
   option :number_of_processes, :type => :numeric, :default => 3, :aliases => "-P",
          :desc => "Parallel processing on 'x' cores. If 0 multithreading is disabled. " \
                   "Example: '-P 2' "
+  option :random_seed, :type => :numeric, :default => 123456, :aliases => "-r",
+         :desc => "Random seed to make results repeatbale. " \
+                  "Example: '-r 123456' "
 
   def generate
 
@@ -50,6 +49,9 @@ class OptimalSolution < Thor
     partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
     graph_file_name = "graphs/#{phylip_file.scan(/(\w+)\//).join("-")} #{start_time.strftime "%Y-%m-%d %H-%M-%S"}"
+    random_seed = Random.new(options[:random_seed])
+
+    puts "Program started at #{start_time}"
 
     # Drop identical sites
     unless partition_file.include?("uniq")
@@ -57,7 +59,6 @@ class OptimalSolution < Thor
           drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
     end
 
-    puts "Program started at #{start_time}"
     puts "Using parameters: Tree file: #{options[:tree_file]}; " \
          "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
          "Sample root nodes: #{sample_root}; " \
@@ -71,11 +72,11 @@ class OptimalSolution < Thor
     list_of_sites = partitions.map do |partition|
       partitions_limiter += 1
       next if partitions_limiter > options[:crop_partitions]
-      (partition.sites.first ... partition.sites.first + options[:crop_sites_per_partition]).map {|i| {i => partition.name} }
+      (partition.sites.first ... partition.sites.first + (options[:crop_sites_per_partition] - random_seed.rand(0..2))).map {|i| {i => partition.name} }
     end.flatten.compact
 
     # Distribute to bins
-    puts "Calculating number of distributions for #{options[:crop_sites_per_partition]} sites for #{options[:crop_partitions]} partitions over #{options[:number_of_bins]} bins"
+    puts "Calculating number of distributions for #{list_of_sites.size} sites in #{options[:crop_partitions]} partitions over #{options[:number_of_bins]} bins"
     distributions = list_of_sites.distribute_to_bins(options[:number_of_bins]).to_a
     puts "Result: #{distributions.size} distributions"
 
