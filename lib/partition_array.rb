@@ -145,7 +145,7 @@ class PartitionArray
   def crop!(crop_partitions, crop_sites_per_partition)
     @list = Hash[@list.first(crop_partitions)]
     @list = Hash[@list.map do |partition_name, partition|
-      [partition_name, partition.crop(crop_sites_per_partition)]
+      [partition_name, partition.crop(crop_sites_per_partition - Random.rand(0..2))]
     end]
   end
 
