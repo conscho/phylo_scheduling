@@ -238,6 +238,9 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
       end
     end
 
+    # Trees are still referenced to original partitions in bins. So we clear those references by instead using the tree_master
+    partitions_for_redistribution.add_tree!(tree_master, compute = false)
+
     # Define current bins average as lower bound
     backup_lower_bound = bins.operations_lower_bound
     bins.operations_lower_bound = bins.average_bin_size
@@ -334,7 +337,7 @@ def apply_optimization(bins, bins_master, partitions_master, tree_master, heuris
 
     # Apply further optimizations on top
     ['low-src', 'red-max'].each do |further_optimization|
-      csv_output << apply_optimization(bins, nil, partitions_master, nil, "#{heuristic}_#{optimization}", further_optimization)
+      csv_output << apply_optimization(bins, nil, partitions_master, tree_master, "#{heuristic}_#{optimization}", further_optimization)
     end
 
   end

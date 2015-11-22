@@ -298,6 +298,8 @@ class BinArray
   def cut_fill!(remaining_partitions)
     # Fill each bin starting with the least filled
     self.each do |bin|
+      break if remaining_partitions.empty? # End if all remaining partitions have been distributed already
+
       # Total number of operations that need to go into this bin
       total_operations_remaining = remaining_partitions.op_optimized_size
       total_free_space = self.total_free_space
