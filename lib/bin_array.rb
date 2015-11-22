@@ -198,7 +198,7 @@ class BinArray
             operations = @operations_worst_case + 1
           else
             # Simulate insertion of site into existing partition of current bin
-            operations = target_partition.incr_add_sites!([site], true)
+            operations = target_partition.incr_add_sites!([site], simulate = true)
           end
           # Check if bin.size is smaller than lower_bound. Save simulation_result accordingly to prefer addition below lower_bound.
           if bin.update_size!.size < @operations_lower_bound

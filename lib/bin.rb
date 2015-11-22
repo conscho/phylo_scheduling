@@ -80,6 +80,14 @@ class Bin
   def to_s(option = "none")
     if option == "fill_level"
       "[size: #{@size}, partitions: #{@list.size}, sites: #{self.total_sites}]"
+    elsif option == "sites"
+      string = "[size: #{@size}, partitions: "
+      @list.each_value {|partition| string += "(#{partition.to_s(option)}), "}
+      if string.size > 1
+        string[0..-3] + "]"
+      else
+        "[]"
+      end
     else
       string = "[size: #{@size}, partitions: "
       @list.each_value {|partition| string += "(#{partition.to_s}), "}

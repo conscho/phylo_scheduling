@@ -186,9 +186,9 @@ class PartitionArray
     end
   end
 
-  def to_s
+  def to_s(option = "none")
     string = "["
-    @list.each_value {|partition| string += "(#{partition.to_s}), "}
+    @list.each_value {|partition| string += "(#{partition.to_s(option)}), "}
     if string.size > 1
       string[0..-3] + "]"
     else

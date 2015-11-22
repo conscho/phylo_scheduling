@@ -161,8 +161,12 @@ class Partition
     self.op_optimized <=> other.op_optimized
   end
 
-  def to_s
-    "Partition #{@name}, #{self.sites.size} sites"
+  def to_s(option = "none")
+    if option == "sites"
+      "Partition #{@name}, sites #{self.sites}"
+    else
+      "Partition #{@name}, #{self.sites.size} sites"
+    end
   end
 
   def to_csv(hash)
