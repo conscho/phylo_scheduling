@@ -111,31 +111,31 @@ class BinArray
     remaining_partitions
   end
 
-  # Fill one site of each partition into its assigned bin. Alternative approach.
+  # Fill one site of each partition into its assigned bin. Current pseudocode version.
   def greedy1_initial_alt3!(remaining_partitions)
     bin_index = 0
     virtual_size = 0
     remaining_partitions.each do |partition|
       average_site_size = partition.size / partition.sites.size
-      z = 1
-      while z <= partition.sites.size && bin_index < @list.size
-        z_prime = ((@operations_lower_bound - @list[bin_index].size - virtual_size).to_f/average_site_size).ceil
-        if z + z_prime + 1 > partition.sites.size
-          z_prime = partition.sites.size - z + 1
-          bin_is_full = false
-          virtual_size = z_prime * average_site_size - @operations_worst_case
-        else
-          bin_is_full = true
-          virtual_size = 0
-        end
+      z = 0
+      while z < partition.sites.size && bin_index < @list.size
+        # Number of sites to go in bin bin_index
+        z_prime = [((@operations_lower_bound - @list[bin_index].size - virtual_size).to_f/average_site_size).ceil,
+                   partition.sites.size - z].min
 
         # Assign site to bin
-        mid_site = partition.sites[z + z_prime / 2 - 1]
+        mid_site = partition.sites[z + z_prime / 2]
         dropped_partition = partition.drop_specific_site!(mid_site)
         @list[bin_index].add!([dropped_partition])
 
+        # -1 because we dropped one site, so the index z is also -1
         z += z_prime - 1
-        bin_index += 1 if bin_is_full
+        if z >= partition.sites.size
+          virtual_size = z_prime * average_site_size - @operations_worst_case
+        else
+          virtual_size = 0
+          bin_index += 1
+        end
       end
     end
     remaining_partitions
