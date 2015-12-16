@@ -11,6 +11,51 @@ class BinArray
     @list = Array.new(number_of_bins) { Bin.new }
   end
 
+
+  # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
+  def original_scheduling_initial!(partitions)
+    # Phase 1: Sort partitions by sites.size
+    partitions.sort_by_sites!
+
+    # Phase 2: Initial filling
+    bin_assigner = 0
+    full_bins = 0
+    partitions.size.times do
+      if @list[bin_assigner].total_sites + partitions.first.sites.size <= @sites_lower_bound
+        @list[bin_assigner].add!([partitions.first])
+        partitions.drop!(1)
+
+        # Edge case handling for perfect fit
+        if @list[bin_assigner].total_sites == @sites_lower_bound
+          full_bins += 1
+          @sites_lower_bound -= 1 if full_bins == @list.size - @sites_rounding_adjustment
+        end
+
+      else
+        break
+      end
+
+      bin_assigner = (bin_assigner + 1) % @list.size
+    end
+    partitions
+  end
+
+  def original_scheduling_fill!(remaining_partitions)
+    # Phase 3: Partitioning
+    # Fill each bin starting with the least filled
+    self.sort_by { |bin| bin.total_sites }.each do |bin|
+
+      # How many sites need to go into the current bin
+      number_of_sites = @sites_lower_bound - bin.total_sites
+
+      # Fill the "remaining_partitions" into the bin until the bin is full. Then return the rest.
+      dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
+      bin.add!(dropped_partitions)
+
+      # FIXME: Exact fit edge case
+    end
+  end
+
   # Distribute partitions to bins similar like the original scheduling algorithm:
   # Fill from small to big without breaking partitions. Stop if a partition doesn't fit anymore.
   # @return [partitions] Remaining partitions that did not feet into the bins.
@@ -111,36 +156,6 @@ class BinArray
     remaining_partitions
   end
 
-  # Fill one site of each partition into its assigned bin. Current pseudocode version.
-  def greedy1_initial_alt3!(remaining_partitions)
-    bin_index = 0
-    virtual_size = 0
-    remaining_partitions.each do |partition|
-      average_site_size = partition.size / partition.sites.size
-      z = 0
-      while z < partition.sites.size && bin_index < @list.size
-        # Number of sites to go in bin bin_index
-        z_prime = [((@operations_lower_bound - @list[bin_index].size - virtual_size).to_f/average_site_size).ceil,
-                   partition.sites.size - z].min
-
-        # Assign site to bin
-        mid_site = partition.sites[z + z_prime / 2]
-        dropped_partition = partition.drop_specific_site!(mid_site)
-        @list[bin_index].add!([dropped_partition])
-
-        # -1 because we dropped one site, so the index z is also -1
-        z += z_prime - 1
-        if z >= partition.sites.size
-          virtual_size = z_prime * average_site_size - @operations_worst_case
-        else
-          virtual_size = 0
-          bin_index += 1
-        end
-      end
-    end
-    remaining_partitions
-  end
-
   # Fill one site of each partition into its assigned bin. Alternative approach.
   def greedy1_initial_alt2!(remaining_partitions)
 
@@ -179,6 +194,36 @@ class BinArray
       end
     end
 
+    remaining_partitions
+  end
+
+  # Fill one site of each partition into its assigned bin. Current pseudocode version.
+  def greedy1_initial_alt3!(remaining_partitions)
+    bin_index = 0
+    virtual_size = 0
+    remaining_partitions.each do |partition|
+      average_site_size = partition.size / partition.sites.size
+      z = 0
+      while z < partition.sites.size && bin_index < @list.size
+        # Number of sites of this partition to go in bin bin_index
+        z_prime = [((@operations_lower_bound - @list[bin_index].size - virtual_size).to_f/average_site_size).ceil,
+                   partition.sites.size - z].min
+
+        # Assign site to bin
+        mid_site = partition.sites[z + z_prime / 2]
+        dropped_partition = partition.drop_specific_site!(mid_site)
+        @list[bin_index].add!([dropped_partition])
+
+        # -1 because we dropped one site, so the index z is also -1
+        z += z_prime - 1
+        if z >= partition.sites.size
+          virtual_size = z_prime * average_site_size - @operations_worst_case
+        else
+          virtual_size = 0
+          bin_index += 1
+        end
+      end
+    end
     remaining_partitions
   end
 
@@ -333,50 +378,6 @@ class BinArray
     end
   end
 
-
-  # Use the original - subtree repeats agnostic - scheduling algorithm to fill the bins. Used as a reference.
-  def original_scheduling_initial!(partitions)
-    # Phase 1: Sort partitions by sites.size
-    partitions.sort_by_sites!
-
-    # Phase 2: Initial filling
-    bin_assigner = 0
-    full_bins = 0
-    partitions.size.times do
-      if @list[bin_assigner].total_sites + partitions.first.sites.size <= @sites_lower_bound
-        @list[bin_assigner].add!([partitions.first])
-        partitions.drop!(1)
-
-        # Edge case handling for perfect fit
-        if @list[bin_assigner].total_sites == @sites_lower_bound
-          full_bins += 1
-          @sites_lower_bound -= 1 if full_bins == @list.size - @sites_rounding_adjustment
-        end
-
-      else
-        break
-      end
-
-      bin_assigner = (bin_assigner + 1) % @list.size
-    end
-    partitions
-  end
-
-  def original_scheduling_fill!(remaining_partitions)
-    # Phase 3: Partitioning
-    # Fill each bin starting with the least filled
-    self.sort_by { |bin| bin.total_sites }.each do |bin|
-
-      # How many sites need to go into the current bin
-      number_of_sites = @sites_lower_bound - bin.total_sites
-
-      # Fill the "remaining_partitions" into the bin until the bin is full. Then return the rest.
-      dropped_partitions = remaining_partitions.drop_sites!(number_of_sites)
-      bin.add!(dropped_partitions)
-
-      # FIXME: Exact fit edge case
-    end
-  end
 
 
   # Get the names of the partitions that are split
