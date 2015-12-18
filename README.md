@@ -59,7 +59,10 @@ Generates the groundtruth/optimal data distribution for the given dataset.
 Compares the amount of SRCs of each site for different types of trees.
 - Example Usage: `./site_dependencies_count generate -b pars:./data/128/parsimony_trees/*parsimonyTree* pars_ml:./data/128/parsimony_trees/*result* rand_ml:./data/128/random_trees/*result* -p ./data/128/128.partitions -l ./data/128/128.phy`
 - Example CSV Output: [/output_site_dependencies_count/](/output_site_dependencies_count/)
-- Example Graph Output: [/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf), [/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf), [/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf)
+- Example Graph Output: 
+  [/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf)
+  [/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf)
+  [/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf)
 
 ### site_dependencies_graph:
 Visualizes the SRs and their dependencies between sites for each site. The dependency graph is force based, which means that sites that are close together have more dependencies than sites that are further apart.
@@ -91,22 +94,22 @@ Calculates the potential savings due to the SR optimization in the Phylogenetic 
 - Example Usage: `./statistics generate -b pars:./data/128/parsimony_trees/*parsimonyTree* pars_ml:./data/128/parsimony_trees/*result* rand_ml:./data/128/random_trees/*result* -p ./data/128/128.partitions -l ./data/128/128.phy -t all`
 - Example CSV Output: [/output_statistics/](/output_statistics/)
 - Example Graph Output:
-[/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf),
-[/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf),
-[/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf),
-[/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf),
-[/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf),
-[/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf),
-[/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf)
+  [/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf),
+  [/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf),
+  [/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf),
+  [/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf),
+  [/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf),
+  [/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf),
+  [/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf)
 
 ### taxa_site_analysis:
 Analyzes whether the number of sites and/or the number of taxa have an impact on the savings due to the SR optimization.
 - Example Usage: `./taxa_site_analysis generate -t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0 -p ./data/59/59.partitions.uniq -l ./data/59/59.phy.uniq`
 - Example CSV Output: [/output_taxa_site_analysis/](/output_taxa_site_analysis/)
 - Example Graph Output: 
-[/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf),
-[/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf),
-[/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf](/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf)
+  [/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf),
+  [/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf),
+  [/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf](/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf)
 
 
 ## Credits
