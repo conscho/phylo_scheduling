@@ -60,56 +60,56 @@ Compares the amount of SRCs of each site for different types of trees.
 - Example Usage: `./site_dependencies_count generate -b pars:./data/128/parsimony_trees/*parsimonyTree* pars_ml:./data/128/parsimony_trees/*result* rand_ml:./data/128/random_trees/*result* -p ./data/128/128.partitions -l ./data/128/128.phy`
 - Example CSV Output: [/output_site_dependencies_count/](/output_site_dependencies_count/)
 - Example Graph Output: 
-  [/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf)
-  [/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf)
-  [/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf)
+[site dependencies.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependencies.pdf), 
+[site dependency distribution for all trees.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for all trees.pdf), 
+[site dependency distribution for one tree.pdf](/graphs/data-128 2015-12-18 11-24-38 site dependency distribution for one tree.pdf)
 
 ### site_dependencies_graph:
 Visualizes the SRs and their dependencies between sites for each site. The dependency graph is force based, which means that sites that are close together have more dependencies than sites that are further apart.
 - Example Usage: `./site_dependencies_graph generate -t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0 -p ./data/59/59.partitions.uniq -l ./data/59/59.phy.uniq -r 20`
 - Example CSV Output: [/output_site_dependencies_graph/](/output_site_dependencies_graph/)
-- Example Graph Output: [/graphs/data-59 2015-12-18 11-21-37 site dependencies graph.pdf](/graphs/data-59 2015-12-18 11-21-37 site dependencies graph.pdf)
+- Example Graph Output: [site dependencies graph.pdf](/graphs/data-59 2015-12-18 11-21-37 site dependencies graph.pdf)
 
 ### sorting1:
 Analyzes the effect of sorting sites lexicographically. 
 - Example Usage: `./sorting1 generate -b pars_ml:./data/404/parsimony_trees/*result* rand_ml:./data/404/random_trees/*result* -p ./data/404/404.partitions -l ./data/404/404.phy`
 - Example CSV Output: [/output_sorting1/](/output_sorting1/)
-- Example Graph Output: [/graphs/data-404 2015-11-15 15-15-13 sorting1.pdf](/graphs/data-404 2015-11-15 15-15-13 sorting1.pdf)
-- Example Summary for Multiple Calls: [/graphs/sorting1 summary.pdf](/graphs/sorting1 summary.pdf)
+- Example Graph Output: [sorting1.pdf](/graphs/data-404 2015-11-15 15-15-13 sorting1.pdf)
+- Example Summary for Multiple Calls: [sorting1 summary.pdf](/graphs/sorting1 summary.pdf)
 
 ### sorting2:
 Analyzes the effect of sorting sites lexicographically and compares it to a Minimal Spanning Tree approach of sorting sites. 
 - Example Usage: `./sorting2 generate -t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0 -p ./data/59/59.partitions -l ./data/59/59.phy`
 - Example CSV Output: [/output_sorting2/](/output_sorting2/)
-- Example Graph Output: [/graphs/data-59 2015-12-18 11-17-54 sorting2.pdf](/graphs/data-59 2015-12-18 11-17-54 sorting2.pdf)
+- Example Graph Output: [sorting2.pdf](/graphs/data-59 2015-12-18 11-17-54 sorting2.pdf)
 
 ### sorting3:
 Analyzes the effect of sorting sites lexicographically for the RAxML trace. 
 - Example Usage: `./sorting3 generate -T ./data/trace/101.trace.topo -l ./data/trace/101.phy -p ./data/trace/101.partitions`
 - Example CSV Output: [/output_sorting3/](/output_sorting3/)
-- Example Graph Output: [/graphs/data-trace 2015-11-16 23-15-22 sorting3.pdf](/graphs/data-trace 2015-11-16 23-15-22 sorting3.pdf)
+- Example Graph Output: [sorting3.pdf](/graphs/data-trace 2015-11-16 23-15-22 sorting3.pdf)
 
 ### statistics:
 Calculates the potential savings due to the SR optimization in the Phylogenetic Likelihood Function for our datasets.
 - Example Usage: `./statistics generate -b pars:./data/128/parsimony_trees/*parsimonyTree* pars_ml:./data/128/parsimony_trees/*result* rand_ml:./data/128/random_trees/*result* -p ./data/128/128.partitions -l ./data/128/128.phy -t all`
 - Example CSV Output: [/output_statistics/](/output_statistics/)
 - Example Graph Output:
-  [/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf),
-  [/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf),
-  [/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf),
-  [/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf),
-  [/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf),
-  [/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf),
-  [/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf)
+[height to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 height to savings.pdf),
+[likelihood to savings.pdf](/graphs/data-128 2015-12-18 12-31-06 likelihood to savings.pdf),
+[savings per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per batch.pdf),
+[savings per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 savings per partition.pdf),
+[split loss comparison per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss comparison per partition.pdf),
+[split loss per partition.pdf](/graphs/data-128 2015-12-18 12-31-06 split loss per partition.pdf),
+[splitt loss per batch.pdf](/graphs/data-128 2015-12-18 12-31-06 splitt loss per batch.pdf)
 
 ### taxa_site_analysis:
 Analyzes whether the number of sites and/or the number of taxa have an impact on the savings due to the SR optimization.
 - Example Usage: `./taxa_site_analysis generate -t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0 -p ./data/59/59.partitions.uniq -l ./data/59/59.phy.uniq`
 - Example CSV Output: [/output_taxa_site_analysis/](/output_taxa_site_analysis/)
 - Example Graph Output: 
-  [/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf),
-  [/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf),
-  [/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf](/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf)
+[variation taxa site.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa site.pdf),
+[variation taxa.pdf](/graphs/data-59 2015-12-18 11-09-47 variation taxa.pdf),
+[variation sites.pdf](/graphs/data-59 2015-12-18 11-09-47 variation sites.pdf)
 
 
 ## Credits
