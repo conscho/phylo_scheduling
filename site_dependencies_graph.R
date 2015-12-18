@@ -1,5 +1,6 @@
 library(ggplot2)
 library(grid)
+library(plyr)
 library(dplyr)
 library(igraph)
 

@@ -6,10 +6,8 @@ require 'parallel'
 require 'fileutils'
 require 'pp'
 require 'ruby-progressbar'
-#require 'Newick' # Some problem with including the forked gem
 require 'require_all'
 require 'deep_clone'
-#require 'stackprof' # Used for profiling
 require 'matrix'
 
 require_all 'lib'

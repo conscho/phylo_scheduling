@@ -5,15 +5,9 @@ require 'thor'
 require 'parallel'
 require 'fileutils'
 require 'ruby-progressbar'
+require 'require_all'
 
-require './lib/helper'
-require './lib/newick'
-require './lib/multi_io'
-require './lib/numeric'
-require './lib/array'
-require './lib/hash'
-require './lib/partition_array'
-require './lib/partition'
+require_all 'lib'
 
 
 class SiteDependencies < Thor

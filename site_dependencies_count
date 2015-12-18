@@ -5,15 +5,9 @@ require 'thor'
 require 'parallel'
 require 'fileutils'
 require 'ruby-progressbar'
+require 'require_all'
 
-require './lib/helper'
-require './lib/newick'
-require './lib/multi_io'
-require './lib/numeric'
-require './lib/array'
-require './lib/hash'
-require './lib/partition_array'
-require './lib/partition'
+require_all 'lib'
 
 
 class SiteDependencies < Thor
@@ -42,6 +36,7 @@ class SiteDependencies < Thor
     partitions = PartitionArray.from_file(partition_file)
     number_of_taxa, number_of_sites, phylip_data = read_phylip(phylip_file)
 
+    puts "Program started at #{start_time}"
 
     # Drop identical sites
     unless partition_file.include?("uniq")
@@ -49,7 +44,6 @@ class SiteDependencies < Thor
           drop_unique_sites(partitions, phylip_data, partition_file, phylip_file, number_of_taxa)
     end
 
-    puts "Program started at #{start_time}"
     puts "Using parameters: Tree files: #{options[:batches]}; " \
          "Partition file: #{partition_file}; Phylip File: #{phylip_file}; " \
          "Sample root nodes: #{sample_root}; Sample trees: #{options[:sample_trees]}; " \

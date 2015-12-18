@@ -4,16 +4,9 @@ require 'rubygems'
 require 'thor'
 require 'fileutils'
 require 'ruby-progressbar'
+require 'require_all'
 
-require './lib/helper'
-require './lib/newick'
-require './lib/multi_io'
-require './lib/numeric'
-require './lib/array'
-require './lib/hash'
-require './lib/partition_array'
-require './lib/partition'
-
+require_all 'lib'
 
 class OptimalSolution < Thor
   desc "generate", "analyze effect of number of taxa and site on savings for one tree"
@@ -35,7 +28,7 @@ class OptimalSolution < Thor
   option :crop_sites_end, :type => :numeric, :default => 80, :aliases => "-e",
          :desc => "Run analysis for x to y sites. " \
                   "Example: '-s 10 -e 20' "
-  option :drop_taxa_per_partition, :type => :numeric, :default => 1, :aliases => "-d",
+  option :drop_taxa_per_partition, :type => :numeric, :default => 40, :aliases => "-d",
          :desc => "Drop x taxa from full tree. " \
                   "Example: '-d 20' "
 
