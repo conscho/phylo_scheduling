@@ -1,0 +1,2 @@
+number_of_bins,groundtruth,phylip_file,sample_root,program_runtime,data_file,graph_file_name
+32,false,./data/10e/10.phy.uniq,midpoint,6 minutes and 49 seconds,./output_scheduling/2015-12-17 10-25-31 data.csv,graphs/data-10e 2015-12-17 10-25-31

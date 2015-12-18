@@ -1,0 +1,16 @@
+partition,distance,sort
+ndhf1st,17490,original
+rbcl1st,16816,original
+rpoc23rd,13496,original
+cprs,14700,original
+phyb3rd,16818,original
+ndhf1st,7072,mst
+rbcl1st,6748,mst
+rpoc23rd,6982,mst
+cprs,9910,mst
+phyb3rd,9398,mst
+ndhf1st,7564,lxi
+rbcl1st,8638,lxi
+rpoc23rd,7796,lxi
+cprs,10624,lxi
+phyb3rd,11172,lxi

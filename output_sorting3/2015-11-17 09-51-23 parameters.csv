@@ -1,0 +1,2 @@
+phylip_file,sample_root,sample_trees,program_runtime,data_file,graph_file_name
+./data/trace/101.phy.uniq,midpoint,100,6 minutes and 27 seconds,./output_sorting3/2015-11-17 09-51-23 data.csv,graphs/data-trace 2015-11-17 09-51-23

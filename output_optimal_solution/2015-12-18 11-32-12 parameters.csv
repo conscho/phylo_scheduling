@@ -1,0 +1,2 @@
+phylip_file,sample_root,number_of_bins,crop_partitions,crop_sites_per_partition,number_of_processes,savings_in_largest_bin,operations_optimized,program_runtime,data_file,graph_file_name
+./data/10a/10.phy.uniq,midpoint,2,3,7,3,6.37,382,23 seconds,./output_optimal_solution/2015-12-18 11-32-12 data.csv,graphs/data-10a 2015-12-18 11-32-12

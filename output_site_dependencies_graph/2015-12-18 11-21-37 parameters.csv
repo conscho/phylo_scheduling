@@ -1,0 +1,2 @@
+tree_file,number_of_taxa,number_of_sites,partition_name,crop_sites,program_runtime,data_file,graph_file_name
+./data/59/parsimony_trees/RAxML_result.T4.RUN.0,59,3238,ndhf1st,20,0 seconds,./output_site_dependencies_graph/2015-12-18 11-21-37 data.csv,graphs/data-59 2015-12-18 11-21-37

@@ -1,0 +1,2 @@
+phylip_file,sample_root,sample_trees,number_of_partitions,number_of_taxa,number_of_sites,program_runtime,data_file,graph_file_name
+./data/128/128.phy.uniq,midpoint,1,34,128,19866,1 minutes and 33 seconds,./output_site_dependencies_count/2015-12-18 11-24-38 data.csv,graphs/data-128 2015-12-18 11-24-38

@@ -1,0 +1,2 @@
+phylip_file,sample_root,sample_trees,program_runtime,data_file,graph_file_name
+./data/10e/10.phy.uniq,midpoint,100,1 hours and 21 minutes,./output_sorting1/2015-11-15 11-46-32 data.csv,graphs/data-10e 2015-11-15 11-46-32

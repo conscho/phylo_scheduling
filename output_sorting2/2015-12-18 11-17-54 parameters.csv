@@ -1,0 +1,2 @@
+crop_partitions,crop_sites,phylip_file,sample_root,program_runtime,data_file,graph_file_name
+5,200,./data/59/59.phy.uniq,midpoint,31 seconds,./output_sorting2/2015-12-18 11-17-54 data.csv,graphs/data-59 2015-12-18 11-17-54

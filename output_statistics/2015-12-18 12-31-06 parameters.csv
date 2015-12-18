@@ -1,0 +1,2 @@
+phylip_file,sample_root,sample_trees,compare_with_likelihood,number_of_processes,split_partitions,number_of_partitions,number_of_taxa,number_of_sites,program_runtime,data_file,graph_file_name
+./data/128/128.phy.uniq,midpoint,all,true,4,true,34,128,19866,1 hours and 25 minutes,./output_statistics/2015-12-18 12-31-06 data.csv,graphs/data-128 2015-12-18 12-31-06
