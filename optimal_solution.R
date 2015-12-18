@@ -37,7 +37,7 @@ for (parameter.file in files) {
     geom_text(aes(label=operations, bin, operations), position="stack", vjust = +1) + 
     facet_grid(type~solution, scales = "free_y") + 
     ggplotRotateLabel + ggplotTheme + ggplotTitle
-  ggsave(file=paste(graphFileName, " groundtruth", ".pdf" , sep = ""), plot = gp, w=10, h=10)
+  ggsave(file=paste(graphFileName, " optimal solution", ".pdf" , sep = ""), plot = gp, w=10, h=10)
   
 }
 
