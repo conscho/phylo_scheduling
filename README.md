@@ -47,7 +47,7 @@ Applies 72 heuristics for a given dataset and number of CPUs to optimize load ba
 Options: By using `-g true` it will compare the 72 heuristics with the groundtruth. That is the optimal solution by evaluating all possible distributions. Note that, by using this parameter the partitions will be cropped. The level of cropping can be defined by using `-n` and `-s`. There is also a random parameter to drop 0 up to 2 sites from each partition to make the scenario more realistic.
 - Example Usage: `./scheduling generate -t ./data/59/parsimony_trees/RAxML_result.T4.RUN.0 -p ./data/59/59.partitions -l ./data/59/59.phy -b 16`
 - Example CSV Output: [/output_scheduling/](/output_scheduling/)
-- Example Graph Output: [/graphs/data-59 2015-12-17 15-47-45 scheduling.pdf](/graphs/data-59 2015-12-17 15-47-45 scheduling.pdf), [/graphs/data-59 2015-12-17 15-47-45 scheduling2.pdf](/graphs/data-59 2015-12-17 15-47-45 scheduling2.pdf)
+- Example Graph Output: [/graphs/data-59 2015-12-17 10-24-19 scheduling.pdf](/graphs/data-59 2015-12-17 10-24-19 scheduling.pdf), [/graphs/data-59 2015-12-17 10-24-19 scheduling2.pdf](/graphs/data-59 2015-12-17 10-24-19 scheduling2.pdf)
 - Example Summary Graph: [/graphs/comparison scheduling.pdf](/graphs/comparison scheduling.pdf)
 
 ### optimal_solution:
