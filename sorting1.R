@@ -56,7 +56,7 @@ textData <- sumData %>%
   summarise(percentage = (round(max(mean_distance)/min(mean_distance), 4) - 1) * 100, mean_distance = mean(mean_distance))
   
 gp = ggplot(sumData, aes(sort, mean_distance)) + 
-  xlab("Batch") + ylab("PLF-C Distance between consecutive sites") +
+  xlab("Batch") + ylab("Accumulated PLF-C of consecutive sites") +
   geom_bar(stat="identity", position = "dodge") + 
   geom_text(data = textData, aes(x=1, y=mean_distance, label = paste(percentage, " % difference"))) +
   ggplotTheme + ggplotRotateLabel
